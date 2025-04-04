@@ -1,0 +1,21 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "16.18.0",
+    "sdksVersions": {
+      "@microsoft/microsoft-graph-client": "3.0.2",
+      "@microsoft/teams-js": "2.24.0"
+    },
+    "version": "1.20.0",
+    "libraryName": "invoice-tracker-app",
+    "libraryId": "a0b8d4e9-9bca-4285-ad10-b95e85d4e5e0",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "invoice-tracker-app",
+    "solutionShortDescription": "invoice-tracker-app description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}

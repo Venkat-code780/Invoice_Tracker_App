@@ -1,0 +1,7 @@
+#mainSection{
+display: flex;
+}
+
+.componentSection{
+    margin-left: 8%;
+}
