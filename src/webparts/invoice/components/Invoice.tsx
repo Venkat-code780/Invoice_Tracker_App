@@ -1,68 +1,87 @@
 import * as React from 'react';
-//import EstimationForm from './Forms/Estimations';
-import { HashRouter as Router } from 'react-router-dom';
-import Navigation from './Navigation/Navbar.component';
-import Routes from './Navigation/RouteItems';
+// import { forEach } from 'lodash';
+import { HashRouter } from 'react-router-dom';
+import NavBar from './Navigation/Navbar.component';
+import Routesitems from './Navigation/RouteItems';
 import { IInvoiceProps } from './IInvoiceProps';
-import '../CSS/styles.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import '../CSS/style.css';
+import { ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
+import '../CSS/Loader.css';
 
 export default class InvoiceTracker extends React.Component<IInvoiceProps> {
- 
-  
-  public onNavItemClick(event: React.MouseEvent<HTMLLIElement, MouseEvent>) {
-    let navLinks = document.querySelectorAll('.nav-click');
-    if (navLinks.length > 0) {
-        navLinks.forEach(item => {
-            item.className = '';
-        });
-    }}
-  public render(): React.ReactElement<IInvoiceProps> {
-  
+  public state={
 
-    const {
-     
-    } = this.props;
-
-    return (
-         
-      <Router>
-          <section id='mainSection' style={{ display: 'flex' }}>
-              {/* <Navigation onNavItemClick={this.onNavItemClick} />   */}
-              <Navigation onNavItemClick={this.onNavItemClick} />
-              <Routes context={this.props.context} spContext={this.props.spContext} props={this.props} />
-          </section>
-      </Router>
-  );
   }
-}
+  public componentDidMount() {
+    // this.removeExtraClasses();
+  }
+// private removeExtraClasses(){
+//   var workbenchElement = document.getElementById("workbenchPageContent");
+//   let wbClass = workbenchElement?.classList.value;
+//   workbenchElement?.classList.remove(wbClass? wbClass : "");
+//   // this.removeAll();
+//   workbenchElement?.addEventListener("click", this.removeAll);
+ 
+// }
+ 
+// private removeAll = () => {
+//   var workbenchElement = document.getElementById("workbenchPageContent");
+//   workbenchElement?.removeEventListener("click",this.removeAll);
+ 
+//   var canvasComponent1 = document.getElementsByClassName("CanvasZoneContainer");
+//   forEach( canvasComponent1, (element:any) => {
+//     let eleClass = element.classList.value;
+//     let eleClassArr = eleClass.split(" ");
+ 
+//     eleClassArr.forEach((elem: string) => {
+//       element.classList.remove(elem.trim());
+//     });
+//   })
+//   var canvasComponent1 = document.getElementsByClassName("CanvasZone");
+//   forEach( canvasComponent1, (element: { classList: { value: any; remove: (arg0: string) => void; }; }) => {
+//     let eleClass = element.classList.value;
+//    let eleClassArr = eleClass.split(" ");
+ 
+//     eleClassArr.forEach((elem: string) => {
+//       element.classList.remove(elem.trim());
+//     });
+//   })
+//   var canvasComponent1 = document.getElementsByClassName("CanvasSection");
+//   forEach( canvasComponent1, (element:any) => {
+//     let eleClass = element.classList.value;
+//    let eleClassArr = eleClass.split(" ");
+ 
+//     eleClassArr.forEach((elem: string) => {
+//       element.classList.remove(elem.trim());
+//     });
+//   })
+// }
 
-// export interface IInvoiceProps {
-//   spContext: any;
   
-//   currentUserGroups: any;
-// }
-// export interface IInvoiceState {
+  
+  public render():React.ReactElement<IInvoiceProps> {
+    const{
 
-// }
-// export default class Invoice extends React.Component<IInvoiceProps,IInvoiceState> {
-//     public onNavItemClick = (event: React.MouseEvent<HTMLLIElement, MouseEvent>) => {
-//         let navLinks=document.querySelectorAll('.nav-click');
-//         if(navLinks){
-//             navLinks.forEach((item)=>{
-//               item.className = '';
-//             });
-//         }
-//     }
-//   public render(): React.ReactElement<IInvoiceProps> {
-//     const Wrapper = () => {
-//       return <EstimationForm {...this.context}{...this.props} />
-//     }
-//     return (
-//         <div>
+    }=this.props;
 
-//           {/* <EstimationForm {...this.context}{...this.props}/> */}
-//           <Wrapper></Wrapper>
-//         </div>
-//     );
-//   }
-// }
+    return(
+      <HashRouter>
+        <div className='menu-hide wrapper d-flex align-items-stretch' id='sideMenuNav'>
+          <NavBar {...this.props} {...this.state}></NavBar>
+          <Routesitems {...this.state} {...this.props}></Routesitems>
+              
+              <ToastContainer/>
+  
+        </div>
+      </HashRouter>
+    )
+  }
+     
+  }
+
+
+
+
+

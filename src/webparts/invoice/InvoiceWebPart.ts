@@ -11,6 +11,9 @@ import { IReadonlyTheme } from '@microsoft/sp-component-base';
 import * as strings from 'InvoiceWebPartStrings';
 import Invoice from './components/Invoice';
 import { IInvoiceProps } from './components/IInvoiceProps';
+import './CSS/style.css';
+import './CSS/left-nav.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 export interface IInvoiceWebPartProps {
   description: string;
@@ -33,6 +36,7 @@ export default class InvoiceWebPart extends BaseClientSideWebPart<IInvoiceWebPar
         context:this.context,
         spContext: this.context.pageContext.legacyPageContext,
          spHttpClient: this.context.spHttpClient,
+         
       }
     );
 

@@ -2,6 +2,7 @@ import * as React from "react";
 import { Nav, INavLinkGroup } from "@fluentui/react";
 
 const NavMenu: React.FunctionComponent = () => {
+
     const navLinks: INavLinkGroup[] = [
       {
         links: [
