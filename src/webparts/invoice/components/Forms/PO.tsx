@@ -12,6 +12,7 @@ import DateUtilities from '../Utilities/Dateutilities';
 import { showToast } from '../Utilities/toastHelper';
 import { showLoader,hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component';
+import Icons from '../../assets/Icons';
 
 
 
@@ -99,7 +100,8 @@ class PO extends React.Component<IPOProps, IPOState> {
     SaveUpdateText: 'Submit',
     addNewProgram: false,
     ItemID: 0,
-    isUnAuthorized:false  
+    isUnAuthorized:false,
+    islocationconfigured:true,
 
 
 
@@ -477,6 +479,7 @@ class PO extends React.Component<IPOProps, IPOState> {
   }
 
   private SubmitData = () => {
+    showLoader();
     let data = {
       location: { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputLocation },
       ClientName: { val: this.state.ClientName, required: true, Name: 'Client Name', Type: ControlType.string, Focusid: this.inputClientName },
@@ -558,12 +561,13 @@ class PO extends React.Component<IPOProps, IPOState> {
     }
     else
     {
+      hideLoader();
       showToast('error', isValid.message);
     }
       // this.setState({ errorMessage: isValid.message });
 
   }
-  private checkDuplicates = (formData: any) => {
+  private checkDuplicates = async (formData: any) => {
     let TrList = 'PODetails';
     var filterString;
     try {
@@ -571,15 +575,15 @@ class PO extends React.Component<IPOProps, IPOState> {
         filterString = `PONumber eq '${formData.PONumber}'`;
       else
         filterString = `PONumber eq '${formData.PONumber}' and Id ne ${this.state.ItemID}`;
-      sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
-        then((response: any[]) => {
+       await sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
+        then(async (response: any[]) => {
           if (response.length > 0){
             showToast('error',"'PO Number' already exists");
             // this.setState({ errorMessage: 'Duplicate record not accept' });
           }
           else
           //  this.setState({ errorMessage: '' });
-            this.insertorupdateListitem(formData);
+            await this.insertorupdateListitem(formData);
         });
     }
     catch (e) {
@@ -889,7 +893,18 @@ private insertorupdateListitem = async (formData: any) => {
       });
   }
 
- 
+   private configurationValidtion = () => {
+     var navBar = document.getElementsByClassName("sidebar");
+     var hamburgericon=document.getElementsByClassName("click-nav-icon");
+     hamburgericon[0]?.classList.add("d-none");
+     navBar[0]?.classList.add("d-none");
+     return (
+       <div className='noConfiguration'>
+         <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
+         <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+       </div>
+     );
+   }
 
   handleNumericChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -961,6 +976,12 @@ private insertorupdateListitem = async (formData: any) => {
       // Fetch user locations from the billing team
       userLoc = Array.from(new Set(billingData.map(b => b.Location)));
       userClients = masterClientData.filter(c => userLoc.includes(c.Location));
+      if(userLoc.length === 0)
+      {
+        this.setState({islocationconfigured:false})
+        
+
+      }
     } else if (isSales) {
       const userEmail = currentUser.Email;
       userClients = masterClientData.filter(c =>
@@ -1106,6 +1127,7 @@ private restricthandlePoNumber = (event: any) => {
       <>
 
         <ModalPopUp title={this.state.modalTitle} modalText={this.state.modalText} isVisible={this.state.showHideModal} onClose={this.handleClose} isSuccess={this.state.isSuccess}></ModalPopUp>
+         {this.state.islocationconfigured &&(
           <div className='container-fluid'>
         <div className='FormContent'>
           <div className='title'> PO Details
@@ -1361,6 +1383,9 @@ private restricthandlePoNumber = (event: any) => {
 
 
      </div>
+         )}
+         {!this.state.islocationconfigured&& this.configurationValidtion()}
+
       </>
 
     )

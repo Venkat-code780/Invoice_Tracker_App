@@ -14,6 +14,7 @@ import { showToast } from '../Utilities/toastHelper';
 import DateUtilities from '../Utilities/Dateutilities';
 import { showLoader,hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component';
+import Icons from '../../assets/Icons';
 
 
 
@@ -97,7 +98,7 @@ class Proposal extends React.Component<IProposalProps, IProposalState> {
     ItemID: 0,
     onLoadStatus:'',
     currencySymbols: '',
-
+islocationconfigured:true,
     
 
 
@@ -437,7 +438,8 @@ class Proposal extends React.Component<IProposalProps, IProposalState> {
     }
   }
 
-  private SubmitData = () => {
+  private SubmitData = async () => {
+    showLoader();
     let data = {
       location: { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputLocation },
       ClientName: { val: this.state.ClientName, required: true, Name: 'Client Name', Type: ControlType.string, Focusid: this.inputClientName },
@@ -475,10 +477,13 @@ class Proposal extends React.Component<IProposalProps, IProposalState> {
 
 
     if (isValid.status) {
-         this.checkDuplicates(formdata);
+        await this.checkDuplicates(formdata);
+           this.state.History.push({ "Project": formdata.Title, "Proposal": formdata.Proposal, "Estimation Hour": formdata.EstimatedHour, "Submitted Date": DateUtilities.getDateDDMMYYYY(formdata.SubmittedDate), "Amount": formdata.Amount, "Created On": new Date().toLocaleString('en-GB', { hour12: false }) })
+           formdata['History'] = JSON.stringify(this.state.History);
     }
     else
     {
+      hideLoader();
       showToast('error', isValid.message);
     }
       // this.setState({ errorMessage: isValid.message });
@@ -495,16 +500,16 @@ class Proposal extends React.Component<IProposalProps, IProposalState> {
       else
         filterString = `Proposal eq '${formData.Proposal}' and Status eq 'In-Progress' and Id ne ${this.state.ItemID}`;
       sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
-        then((response: any[]) => {
+        then(async (response: any[]) => {
           if (response.length > 0){
             showToast('error', "Duplicate 'Title of the Proposal' not accepted.");
             // this.setState({ errorMessage: 'Duplicate record not accept' });
           }
           else
           {
-            this.state.History.push({ "Project": formData.Title, "Proposal": formData.Proposal, "Estimation Hour": formData.EstimatedHour, "Submitted Date": DateUtilities.getDateDDMMYYYY(formData.SubmittedDate), "Amount": formData.Amount, "Created On": new Date().toLocaleString('en-GB', { hour12: false }) })
-           formData['History'] = JSON.stringify(this.state.History);
-            this.insertorupdateListitem(formData);
+                        await this.insertorupdateListitem(formData);
+
+         
           }
         });
     }
@@ -689,6 +694,10 @@ class Proposal extends React.Component<IProposalProps, IProposalState> {
       // Fetch user locations from the billing team
       userLoc = Array.from(new Set(billingData.map(b => b.Location)));
       userClients = masterClientData.filter(c => userLoc.includes(c.Location));
+      if(userLoc.length === 0){
+        this.setState({islocationconfigured:false})
+      }
+      
     } else if (isSales) {
       const userEmail = currentUser.Email;
       userClients = masterClientData.filter(c =>
@@ -707,7 +716,7 @@ class Proposal extends React.Component<IProposalProps, IProposalState> {
       isdevTeam: canSeeSubmitButton
     });
       if(userLoc.length === 1){
-        this.fetchClientsBasedOnLocation(userLoc[0],'');
+        await this.fetchClientsBasedOnLocation(userLoc[0],'');
       }
   
     } catch (error) {
@@ -751,7 +760,7 @@ class Proposal extends React.Component<IProposalProps, IProposalState> {
   }
 
 
-  private changeEstHour = (event: any) => {
+  private changeEstHour = async (event: any) => {
     const selectedTitleofproposal = event.target.options[event.target.selectedIndex].text;
     const selectedId = event.target.value;
     let returnObj: any = {};
@@ -775,8 +784,8 @@ class Proposal extends React.Component<IProposalProps, IProposalState> {
       returnObj[event.target.name] = event.target.checked;
     this.setState(returnObj);
     if (event.target.name === 'TitleoftheProposal') {
-      this.fetchHoursBasedOnProposalfor(selectedTitleofproposal);
-      this.fetchsEstimationidBasedOnTitleofprop(selectedTitleofproposal);
+      await this.fetchHoursBasedOnProposalfor(selectedTitleofproposal);
+      await this.fetchsEstimationidBasedOnTitleofprop(selectedTitleofproposal);
     }
   }
   private fetchHoursBasedOnProposalfor = (selectedTitleofproposal: string) => {
@@ -1024,6 +1033,20 @@ class Proposal extends React.Component<IProposalProps, IProposalState> {
   }
   }
 
+ private configurationValidtion = () => {
+      var navBar = document.getElementsByClassName("sidebar");
+      var hamburgericon=document.getElementsByClassName("click-nav-icon");
+      hamburgericon[0]?.classList.add("d-none");
+      navBar[0]?.classList.add("d-none");
+      return (
+        <div className='noConfiguration'>
+          <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
+          <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+        </div>
+      );
+    }
+
+
   handleNumericChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const regex = /^\d{0,10}(\.\d{0,2})?$/;
@@ -1146,7 +1169,7 @@ class Proposal extends React.Component<IProposalProps, IProposalState> {
       <>
 
         <ModalPopUp title={this.state.modalTitle} modalText={this.state.modalText} isVisible={this.state.showHideModal} onClose={this.handleClose} isSuccess={this.state.isSuccess}></ModalPopUp>
-        
+            {this.state.islocationconfigured &&(
           <div className='container-fluid'>
         <div className='FormContent'>
           <div className='title'> New Proposal
@@ -1405,7 +1428,8 @@ class Proposal extends React.Component<IProposalProps, IProposalState> {
         </div>
         
        </div>
-
+                    )}
+        {!this.state.islocationconfigured && this.configurationValidtion()}
       </>
 
     )

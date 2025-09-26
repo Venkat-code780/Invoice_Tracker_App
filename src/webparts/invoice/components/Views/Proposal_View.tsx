@@ -6,6 +6,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit } from '@fortawesome/free-solid-svg-icons';
 import DateUtilities from '../Utilities/Dateutilities';
 import { showLoader, hideLoader } from '../Shared/Loader';
+import UnAuthorized from '../Shared/UnAuthorized.Component';
+import Icons from '../../assets/Icons';
 
 export interface ProposalViewProps {
 
@@ -35,6 +37,9 @@ export interface ProposalViewProps {
         selectedYear:'',
         allYears: [],
        redirect: false,
+     unauthorized: false,
+     islocationconfigured:true,
+       
 
 
     }
@@ -77,17 +82,38 @@ export interface ProposalViewProps {
     //     }
     //   }
      
-      private getYears=(data: any[])=>{
-        const years: any[]=[];
-        data.forEach(function(item){
-          const year = new Date(item.SubmittedDate).getFullYear();
-          if (years.indexOf(year) === -1) {
-            years.push(year);
-          }
-        });
-        return years.sort((a, b)=> b - a);
+      // private getYears=(data: any[])=>{
+      //   const years: any[]=[];
+      //   data.forEach(function(item){
+      //     const year = new Date(item.SubmittedDate).getFullYear();
+      //     if (years.indexOf(year) === -1) {
+      //       years.push(year);
+      //     }
+      //   });
+      //   return years.sort((a, b)=> b - a);
         
-      };
+      // };
+      private getYears = (data: any[]) => {
+    const currentYear = new Date().getFullYear();
+    const startYear = 2021;
+    const yearsSet = new Set<number>();
+
+    // Add years from data, but only if they are >= 2021
+    data.forEach(item => {
+        const year = new Date(item.SubmittedDate).getFullYear();
+        if (year >= startYear) {
+            yearsSet.add(year);
+        }
+    });
+
+    // Ensure all years from 2021 to current year are included
+    for (let year = startYear; year <= currentYear; year++) {
+        yearsSet.add(year);
+    }
+
+    // Convert to array and sort descending
+    return Array.from(yearsSet).sort((a, b) => a - b);
+};
 
       private handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedYear = e.target.value;
@@ -126,7 +152,18 @@ export interface ProposalViewProps {
         this.setState({ data: data,allYears:allYears,allData:data, SaveUpdateText: 'Submit' });
         hideLoader();
       }
-
+  private configurationValidtion = () => {
+    var navBar = document.getElementsByClassName("sidebar");
+    var hamburgericon=document.getElementsByClassName("click-nav-icon");
+    hamburgericon[0]?.classList.add("d-none");
+    navBar[0]?.classList.add("d-none");
+    return (
+      <div className='noConfiguration'>
+        <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
+        <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+      </div>
+    );
+  }
           private async getCurrentUserGroups(){
                  try {
                 
@@ -137,7 +174,15 @@ export interface ProposalViewProps {
                    const isBilling = userGroups.some(g => g.Title === 'Billing Team');
                    const isSales = userGroups.some(g => g.Title === 'Sales Team');
                    const isDev = userGroups.some(g => g.Title === 'Dev Team'); 
-               
+                  const isAuthorized = isAdmin || isBilling || isSales || isDev;
+                      if (!isAuthorized) {
+                    this.setState({
+                      unauthorized: true,
+                      loading: false
+                    });
+                      return;
+                    }
+
                      const [billingData, clientData] = await Promise.all([
                      sp.web.lists.getByTitle("BillingTeamMatrix").items
                        .filter(`User/Id eq ${currentUser.Id}`)
@@ -211,6 +256,9 @@ export interface ProposalViewProps {
                    // Fetch user locations from the billing team
                    userLoc = Array.from(new Set(billingData.map(b => b.Location)));
                    userClients = masterClientData.filter(c => userLoc.includes(c.Location));
+                    if(userLoc.length === 0){
+                     this.setState({ islocationconfigured: false });
+                      }
                  } else if (isSales) {
                    const userEmail = currentUser.Email;
                    userClients = masterClientData.filter(c =>
@@ -325,6 +373,10 @@ export interface ProposalViewProps {
 
 
         ]
+          if(this.state.unauthorized){
+                    hideLoader();
+                    return <UnAuthorized spContext={this.props.spContext}></UnAuthorized>
+                  }
          if(this.state.redirect){
                     let url = `/Proposal/${this.state.ItemID}`;
                 return (<Navigate to={url}/>);
@@ -332,6 +384,7 @@ export interface ProposalViewProps {
                  else{
          return(
            <React.Fragment>
+              {this.state.islocationconfigured &&(
              <div className='container-fluid'>
             <div className='FormContent ViewTable'>
               <div className='title'> Proposals        
@@ -373,7 +426,8 @@ export interface ProposalViewProps {
                   
               </div>
               </div>
-      
+              )}
+                    {!this.state.islocationconfigured&& this.configurationValidtion()}
             </React.Fragment>
                  
 

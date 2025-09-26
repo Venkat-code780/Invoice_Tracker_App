@@ -109,13 +109,13 @@ class Client2 extends React.Component<ClientProps, ClientState>{
     if (newProps.match.params.id == undefined)
       this.setState({ Location: '', SaveUpdateText: 'Submit', addNewProgram: false });
   }
-  private GetOnloadData = () => {
+  private GetOnloadData = async () => {
     let locationsList= 'Location';
     let TrList = 'Clients';
     try {
 
       // get all the items from a list
-      sp.web.lists.getByTitle(locationsList).items.select('Title').get().then((Locations: any[]) => {
+     await sp.web.lists.getByTitle(locationsList).items.select('Title').get().then((Locations: any[]) => {
         const locationOptions = Locations.map(item=>({
           label: item.Title,
           value: item.Title
@@ -124,8 +124,9 @@ class Client2 extends React.Component<ClientProps, ClientState>{
       }
       );
 
-      sp.web.lists.getByTitle(TrList).items.expand("Sales_x0020_Person_x0020_Name","Alternate_x0020_Sales_x0020_Pers").select("Sales_x0020_Person_x0020_Name/Title","Alternate_x0020_Sales_x0020_Pers/Title","*"). orderBy("Id", false).get().
+      await sp.web.lists.getByTitle(TrList).items.expand("Sales_x0020_Person_x0020_Name","Alternate_x0020_Sales_x0020_Pers").select("Sales_x0020_Person_x0020_Name/Title","Alternate_x0020_Sales_x0020_Pers/Title","*"). orderBy("Id", false).get().
         then((response: any[]) => {
+          response.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime());
           this.BindData(response);
           hideLoader();
         });
@@ -186,6 +187,7 @@ class Client2 extends React.Component<ClientProps, ClientState>{
   }
 
   private SubmitData = () => {
+    showLoader();
     let data = {
       ClientName: { val: this.state.ClientName, required: true, Name: 'Client Name', Type: ControlType.string, Focusid: this.inputClientName },
       location: { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputLocation },
@@ -213,7 +215,10 @@ class Client2 extends React.Component<ClientProps, ClientState>{
     if (isValid.status)
       this.checkDuplicates(formdata);
     else
+    {
+      hideLoader();
       showToast("error", isValid.message);
+    }
       // this.setState({ errorMessage: isValid.message });
   }
 
@@ -254,41 +259,67 @@ private handlenumberChange = (event:React.ChangeEvent<HTMLInputElement>) => {
   }
 
   // Submit Form
+private async insertorupdateListitem(formData: any, list: any) {
+  this.setState({ loading: true });
+  showLoader();
 
-
-  private insertorupdateListitem = (formData:any, list:any) => {
-    this.setState({ loading: true });
-    if (this.state.ItemID == 0) {
-      try {
-        sp.web.lists.getByTitle(list).items.add(formData)
-          .then((res) => {
-            this.onSucess();
-            //console.log(res);
-          }, (Error) => {
-            console.log(Error);
-            this.onError();
-          })
-          .catch((err) => {
-            console.log(Error);
-            this.onError();
-          });
-      }
-      catch (e) {
-        console.log(e);
-      }
+  try {
+    if (this.state.ItemID === 0) {
+      // Add new item
+      const res = await sp.web.lists.getByTitle(list).items.add(formData);
+      this.onSucess();
+      console.log("Item added:", res);
     } else {
-      sp.web.lists.getByTitle(list).items.getById(this.state.ItemID).update(formData).then((res) => {
-        this.onUpdateSucess();
-        //console.log(res);
-      }, (Error) => {
-        console.log(Error);
-        this.onError();
-      }).catch((err) => {
-        this.onError();
-        console.log(err);
-      });
+      // Update existing item
+      const res = await sp.web.lists.getByTitle(list).items.getById(this.state.ItemID).update(formData);
+      this.onUpdateSucess();
+      console.log("Item updated:", res);
     }
+  } catch (error) {
+    console.error("Error inserting/updating item:", error);
+   
+  }finally{
+    hideLoader();
   }
+}
+
+
+  // private insertorupdateListitem = (formData:any, list:any) => {
+  //   this.setState({ loading: true });
+  //    showLoader();
+  //   if (this.state.ItemID == 0) {
+       
+  //     try {
+  //       sp.web.lists.getByTitle(list).items.add(formData)
+  //         .then((res) => {
+  //           this.onSucess();
+  //           //console.log(res);
+  //         }, (Error) => {
+  //           console.log(Error);
+  //           this.onError();
+  //         })
+  //         .catch((err) => {
+  //           console.log(Error);
+  //           this.onError();
+  //         });
+  //     }
+  //     catch (e) {
+  //       console.log(e);
+  //     }
+  //   } else {
+  //     sp.web.lists.getByTitle(list).items.getById(this.state.ItemID).update(formData).then((res) => {
+  //       this.onUpdateSucess();
+  //       //console.log(res);
+  //     }, (Error) => {
+  //       console.log(Error);
+  //       this.onError();
+  //     }).catch((err) => {
+  //       this.onError();
+  //       console.log(err);
+  //     });
+      
+  //   }
+  // }
 
   private onSucess = () => {
     showToast("success", "Client submitted successfully");
@@ -311,7 +342,7 @@ private handlenumberChange = (event:React.ChangeEvent<HTMLInputElement>) => {
     });
   }
 
-  private checkDuplicates = (formData:any) => {
+  private checkDuplicates = async (formData:any) => {
     let TrList = 'Clients';
     var filterString;
     try {
@@ -319,12 +350,12 @@ private handlenumberChange = (event:React.ChangeEvent<HTMLInputElement>) => {
         filterString = `Title eq '${formData.Title}'`;
       else
         filterString = `Title eq '${formData.Title}' and Id ne ${this.state.ItemID}`;
-      sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
-        then((response: any[]) => {
+      await sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
+        then(async (response: any[]) => {
           if (response.length > 0)
            showToast("error", "Duplicate record not accept");
           else
-            this.insertorupdateListitem(formData, TrList);
+           await this.insertorupdateListitem(formData, TrList);
         });
     }
     catch (e) {
@@ -378,11 +409,12 @@ private handlenumberChange = (event:React.ChangeEvent<HTMLInputElement>) => {
     this.setState({ addNewProgram: false, showHideModal: false, Date: null, pr: '', IsActive: false });
   }
 
-  private onEditClickHandler = (id:any) => {
+  private onEditClickHandler = async (id:any) => {
+     showLoader();
     console.log('edit clicked', id);
     try {
  
-      sp.web.lists.getByTitle('Clients').items.getById(id).expand("Sales_x0020_Person_x0020_Name,Alternate_x0020_Sales_x0020_Pers").select("Sales_x0020_Person_x0020_Name/Id,Sales_x0020_Person_x0020_Name/EMail,Alternate_x0020_Sales_x0020_Pers/EMail,Alternate_x0020_Sales_x0020_Pers/Id,*").get()
+       await sp.web.lists.getByTitle('Clients').items.getById(id).expand("Sales_x0020_Person_x0020_Name,Alternate_x0020_Sales_x0020_Pers").select("Sales_x0020_Person_x0020_Name/Id,Sales_x0020_Person_x0020_Name/EMail,Alternate_x0020_Sales_x0020_Pers/EMail,Alternate_x0020_Sales_x0020_Pers/Id,*").get()
         .then((response) => {
           console.log('response:', response);
           let SalesPersonEmails:any =[];
@@ -412,14 +444,14 @@ private handlenumberChange = (event:React.ChangeEvent<HTMLInputElement>) => {
           },()=>{
             document.getElementById('txtclient')?.focus();
           });
-          console.log(this.state);
+         
         })
-        .catch(e => {
-          console.log('Failed to fetch :' + e);
-        });
+     
     }
     catch (e) {
       console.log('failed to fetch data for record :' + id);
+    }finally{
+      hideLoader();
     }
   }
 

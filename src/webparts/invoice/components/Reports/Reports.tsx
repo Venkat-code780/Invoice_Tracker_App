@@ -10,7 +10,8 @@ import formValidation from '../Utilities/Formvalidator';
 
 import { showToast } from '../Utilities/toastHelper';
 import { showLoader,hideLoader } from '../Shared/Loader';
-
+import UnAuthorized from '../Shared/UnAuthorized.Component';
+ 
 
 // import DateUtilities from '../Utilities/Dateutilities';
 
@@ -39,6 +40,7 @@ export interface IReportState {
     chartData: any;
   pieData: any;
   loading: boolean;
+  unauthorized: boolean;
 }
 
 class Reports extends React.Component<IReportProps, IReportState> {
@@ -74,7 +76,8 @@ class Reports extends React.Component<IReportProps, IReportState> {
       InvoiceresultData: [],
         chartData: null,
   pieData: null,
-      loading: false
+      loading: false,
+      unauthorized: false
 
     };
   }
@@ -116,7 +119,15 @@ class Reports extends React.Component<IReportProps, IReportState> {
       const isBilling = userGroups.some(g => g.Title === 'Billing Team');
       const isSales = userGroups.some(g => g.Title === 'Sales Team');
       const isDev = userGroups.some(g => g.Title === 'Dev Team'); 
-  
+            const isAuthorized = isAdmin || isBilling || isSales || isDev;
+      if (!isAuthorized) {
+           this.setState({
+        unauthorized: true,
+        loading: false
+      });
+        return;
+      }
+
         const [billingData, clientData] = await Promise.all([
         sp.web.lists.getByTitle("BillingTeamMatrix").items
           .filter(`User/Id eq ${currentUser.Id}`)
@@ -623,7 +634,10 @@ private getCombindData = (poList: any[], invoiceList: any[]) => {
 
 
   public render() {
-    
+    if(this.state.unauthorized) {
+      hideLoader();
+      return <UnAuthorized spContext={this.props.spContext}></UnAuthorized>
+    }
     if (this.state.Homeredirect) {
       // let message = this.state.modalText;
       let url = `/Dashboard`;

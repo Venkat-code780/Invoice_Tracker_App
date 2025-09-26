@@ -6,7 +6,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit } from '@fortawesome/free-solid-svg-icons';
 import DateUtilities from '../Utilities/Dateutilities';
 import { showLoader,hideLoader } from '../Shared/Loader';
-
+import UnAuthorized from '../Shared/UnAuthorized.Component';
+import Icons from '../../assets/Icons';
 export interface ProjectStatusViewProps {
 
     match: any;
@@ -34,7 +35,9 @@ export interface ProjectStatusViewProps {
         ItemID: 0,
         selectedYear:'',
         allYears: [],
-          redirect: false
+          redirect: false,
+          unauthorized: false,
+          islocationconfigured:true,
 
     }
       constructor(props:any) {
@@ -45,48 +48,197 @@ export interface ProjectStatusViewProps {
     
       
       }
-    public componentDidMount() {
+    public async componentDidMount() {
       document.getElementById('ddlsearch')?.focus();
 
         //console.log('Project Code:', this.props);
-       showLoader();
-        this.GetOnloadData();
+              showLoader();
+
+        await this.getCurrentUserGroups();
+        hideLoader();
+        //  await this.GetOnloadData();
       }
-    private GetOnloadData = () => {
-        let TrList = 'ProjectStatus';
-        try {
-    
-          // get all the items from a list
-          sp.web.lists.getByTitle(TrList).items.expand("Author").select("Author/Title","Author/Id","*").orderBy("Id", false).get().
-            then((response: any[]) => {
-              //console.log(response);
-              
-              this.BindData(response);
-            });
-        }
-        catch (e) {
-          this.setState({
-            modalTitle: 'Error',
-            modalText: 'Sorry! something went wrong',
-            showHideModal: true,
-            isSuccess: false
-          });
-          hideLoader();
-          console.log('failed to fetch data');
-        }
-      }
-     
-      private getYears=(data: any[])=>{
-        const years: any[]=[];
-        data.forEach(function(item){
-          const year = new Date(item.Created).getFullYear();
-          if (years.indexOf(year) === -1) {
-            years.push(year);
-          }
-        });
-        return years.sort((a, b)=> b - a);
+
+           private async getCurrentUserGroups(){
+                            
+                         try {
+                           const currentUser = await sp.web.currentUser.get();
+                           const userGroups = await sp.web.currentUser.groups.get();
+                      
+                            const isAdmin = userGroups.some(g => g.Title === 'P&I Administrators');
+                           const isBilling = userGroups.some(g => g.Title === 'Billing Team');
+                           const isSales = userGroups.some(g => g.Title === 'Sales Team');
+                           const isDev = userGroups.some(g => g.Title === 'Dev Team'); 
+                          const isAuthorized = isAdmin || isBilling || isSales || isDev;
+                              if (!isAuthorized) {
+                            this.setState({
+                              unauthorized: true,
+                              loading: false
+                            });
+                              return;
+                            }
         
-      };
+                             const [billingData, clientData] = await Promise.all([
+                             sp.web.lists.getByTitle("BillingTeamMatrix").items
+                               .filter(`User/Id eq ${currentUser.Id}`)
+                               .expand("User")
+                               .select( "User/EMail","Location")
+                               .get(),
+                     
+                             sp.web.lists.getByTitle("Clients").items
+                               .filter("ISActive eq 1")
+                               .expand("Sales_x0020_Person_x0020_Name", "Alternate_x0020_Sales_x0020_Pers")
+                               .select("Title", "ID", "Location", "Sales_x0020_Person_x0020_Name/EMail", "Alternate_x0020_Sales_x0020_Pers/EMail")
+                               .orderBy("Title")
+                               .top(5000)
+                               .get()
+                           ]);
+                           const masterClientData = clientData.map(c => {
+                           let salesPersonMails: string[] = [];
+                     
+                           if (c.Sales_x0020_Person_x0020_Name?.length) {
+                             salesPersonMails.push(...c.Sales_x0020_Person_x0020_Name.map((sp: { EMail: any; }) => sp.EMail));
+                           }
+                           if (c.Alternate_x0020_Sales_x0020_Pers?.length) {
+                             salesPersonMails.push(...c.Alternate_x0020_Sales_x0020_Pers.map((sp: { EMail: any; }) => sp.EMail));
+                           }
+                     
+                           return {
+                             Client: c.Title,
+                             ClientID: c.ID,
+                             SalesPerson: salesPersonMails,
+                             Location: c.Location
+                           };
+                         });
+                     
+                         let userLoc: string[] = [];
+                         let userClients: any[] = [];
+                         console.log('User Locations:', userClients);
+                         // For Admin or Dev, we need to fetch billing team locations
+                         if (isAdmin) {
+                           // Fetch billing team matrix locations if Dev or Admin
+                           const billingTeamMatrixData = await sp.web.lists
+                             .getByTitle("BillingTeamMatrix")
+                             .items.select("Location")
+                             .get();
+                     
+                           // Collect all unique locations from Billing Team Matrix
+                           userLoc = Array.from(new Set(billingTeamMatrixData.map(b => b.Location)));;
+                           userClients = masterClientData; // Admins and Devs can see all clients
+                         }
+                         else if (isDev) {
+                           const[estimations,proposals]= await Promise.all([ sp.web.lists.getByTitle("Estimations").items
+                             .filter(`SubmittedBy eq 'Dev Team'`)
+                             .expand("Author", "ClientName")
+                             .select("Author/Title","Author/Id","ClientName/Title","ClientName/Id","*")
+                             .get(),
+                              sp.web.lists.getByTitle('ProjectStatus').items.expand("Author").select("Author/Title", "Author/Id", "*").orderBy("Id", false).get()
+                           ]);
+        
+                            const estimationIds = new Set(estimations.map((est: any) => est.Id.toString()));
+                            const matchedProposals: any[] = proposals.filter(
+                         (proposal: any) => estimationIds.has(proposal.EstID?.trim())
+                          );
+                            // matchedProposals.sort((a, b) => b.Id - a.Id)
+                              matchedProposals.sort( (a:any,b:any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime())
+                            this.BindData(matchedProposals);
+                            return; 
+        
+                             
+                         }
+                         
+                         else if (isBilling) {
+                           // Fetch user locations from the billing team
+                           userLoc = Array.from(new Set(billingData.map(b => b.Location)));
+                           userClients = masterClientData.filter(c => userLoc.includes(c.Location));
+                            if(userLoc.length === 0){
+                             this.setState({ islocationconfigured: false });
+                              }
+                         }           
+                           const fetchedestimations=userLoc.map(async (location: string) => {
+                                    return await sp.web.lists.getByTitle('ProjectStatus').items.filter(`ProposalFor eq '${location}'`).expand("Author").select("Author/Title", "Author/Id", "*").orderBy("Id", false).get()
+                                   });
+                         const estimationData: any[][] = await Promise.all(fetchedestimations);
+                         const flatEstimationData = estimationData.reduce((acc, curr) => {
+                          return acc.concat(curr);  // Concatenates each sub-array into a single array
+                           }, []);
+                           flatEstimationData.sort((a, b) => b.Id - a.Id);
+                         flatEstimationData.sort( (a:any,b:any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime())
+                         this.BindData(flatEstimationData);
+                         
+                       
+                         } catch (error) {
+                           console.error('Error fetching user groups:', error);
+                         }
+                       }
+     
+
+
+
+
+
+
+
+
+
+    // private GetOnloadData = async () => {
+    //     let TrList = 'ProjectStatus';
+
+    //     try {
+    
+    //       // get all the items from a list
+    //       await sp.web.lists.getByTitle(TrList).items.expand("Author").select("Author/Title","Author/Id","*").orderBy("Id", false).get().
+    //         then((response: any[]) => {
+    //           response.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime())
+    //           //console.log(response);
+              
+    //           this.BindData(response);
+    //         });
+    //     }
+    //     catch (e) {
+    //       this.setState({
+    //         modalTitle: 'Error',
+    //         modalText: 'Sorry! something went wrong',
+    //         showHideModal: true,
+    //         isSuccess: false
+    //       });
+    //       hideLoader();
+    //       console.log('failed to fetch data');
+    //     }
+    //   }
+     
+      // private getYears=(data: any[])=>{
+      //   const years: any[]=[];
+      //   data.forEach(function(item){
+      //     const year = new Date(item.Created).getFullYear();
+      //     if (years.indexOf(year) === -1) {
+      //       years.push(year);
+      //     }
+      //   });
+      //   return years.sort((a, b)=> b - a);
+        
+      // };
+      private getYears = (data: any[]) => {
+    const currentYear = new Date().getFullYear();
+    const startYear = 2021;
+    const yearsSet = new Set<number>();
+
+    // Add years from data, but only if they are >= 2021
+    data.forEach(item => {
+        const year = new Date(item.SubmittedDate).getFullYear();
+        if (year >= startYear) {
+            yearsSet.add(year);
+        }
+    });
+
+    // Ensure all years from 2021 to current year are included
+    for (let year = startYear; year <= currentYear; year++) {
+        yearsSet.add(year);
+    }
+
+    // Convert to array and sort descending
+    return Array.from(yearsSet).sort((a, b) => a - b);
+};
 
       private handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedYear = e.target.value;
@@ -132,7 +284,174 @@ export interface ProjectStatusViewProps {
         let ID = row.Id?row.Id:Id;
         this.setState({ItemID:ID,redirect:true});
       }
+
+
+  // private async getCurrentUserGroups() {
+  //   try {
+  //     // const currentUser = await sp.web.currentUser.get();
+  //     // const userGroups = await sp.web.currentUser.groups.get();
+  //     const [currentUser, userGroups, ] = await Promise.all([
+  //       sp.web.currentUser.get(),
+  //       sp.web.currentUser.groups.get(),
+  //     ])
+  //     console.log('Current User:', currentUser);
+  //     const isAdmin = userGroups.some(g => g.Title === 'P&I Administrators');
+  //     const isBilling = userGroups.some(g => g.Title === 'Billing Team');
+  //     const isSales = userGroups.some(g => g.Title === 'Sales Team');
+  //     const isDev = userGroups.some(g => g.Title === 'Dev Team');
+  //     const isAuthorized = isAdmin || isBilling || isSales || isDev;
+  //         if (!isAuthorized) {
+  //       this.setState({
+  //         unauthorized: true, 
+  //         loading: false
+  //       });
+  //         return;
+  //     }
+      
+  //   }
+  //   catch (error) {
+  //     console.error('Error fetching user groups:', error);
+  //     this.setState({
+  //       unauthorized: true,
+  //       loading: false
+  //     });
+  //   }
+  // }
+   private configurationValidtion = () => {
+      var navBar = document.getElementsByClassName("sidebar");
+      var hamburgericon=document.getElementsByClassName("click-nav-icon");
+      hamburgericon[0]?.classList.add("d-none");
+      navBar[0]?.classList.add("d-none");
+      return (
+        <div className='noConfiguration'>
+          <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
+          <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+        </div>
+      );
+    }
+   
+      // private async getCurrentUserGroups() {
+      //   try {
+      //     // const currentUser = await sp.web.currentUser.get();
+      //     // const userGroups = await sp.web.currentUser.groups.get();
+      //     const [currentUser, userGroups, clientData] = await Promise.all([
+      //       sp.web.currentUser.get(),
+      //       sp.web.currentUser.groups.get(),
+      //       sp.web.lists.getByTitle("Clients").items
+      //         .filter("ISActive eq 1")
+      //         .expand("Sales_x0020_Person_x0020_Name", "Alternate_x0020_Sales_x0020_Pers")
+      //         .select("Title", "ID", "Location", "Sales_x0020_Person_x0020_Name/EMail", "Alternate_x0020_Sales_x0020_Pers/EMail")
+      //         .orderBy("Title")
+      //         .top(5000)
+      //         .get()
+      //     ])
+    
+      //     const isAdmin = userGroups.some(g => g.Title === 'P&I Administrators');
+      //     const isBilling = userGroups.some(g => g.Title === 'Billing Team');
+      //     const isSales = userGroups.some(g => g.Title === 'Sales Team');
+      //     const isDev = userGroups.some(g => g.Title === 'Dev Team');
+      //     const isAuthorized = isAdmin || isBilling || isSales || isDev;
+      //     if (!isAuthorized) {
+      //   this.setState({
+      //     unauthorized: true, 
+      //     loading: false
+      //   });
+      //     return;
+      // }
+      //     const masterClientData = clientData.map(c => {
+      //       let salesPersonMails: string[] = [];
+    
+      //       if (c.Sales_x0020_Person_x0020_Name?.length) {
+      //         salesPersonMails.push(...c.Sales_x0020_Person_x0020_Name.map((sp: { EMail: any; }) => sp.EMail));
+      //       }
+      //       if (c.Alternate_x0020_Sales_x0020_Pers?.length) {
+      //         salesPersonMails.push(...c.Alternate_x0020_Sales_x0020_Pers.map((sp: { EMail: any; }) => sp.EMail));
+      //       }
+    
+      //       return {
+      //         Client: c.Title,
+      //         ClientID: c.ID,
+      //         SalesPerson: salesPersonMails,
+      //         Location: c.Location
+      //       };
+      //     });
+    
+      //     let userLoc: string[] = [];
+      //     let userClients: any[] = [];
+    
+      //     // For Admin or Dev, we need to fetch billing team locations
+      //     if (isAdmin) {
+      //       // Fetch billing team matrix locations if Dev or Admin
+      //       const billingTeamMatrixData = await sp.web.lists
+      //         .getByTitle("BillingTeamMatrix")
+      //         .items.select("Location")
+      //         .get();
+    
+      //       // Collect all unique locations from Billing Team Matrix
+      //       userLoc = Array.from(new Set(billingTeamMatrixData.map(b => b.Location)));;
+      //       userClients = masterClientData; // Admins and Devs can see all clients
+      //     }
+      //     else if (isDev) {
+      //       await sp.web.lists.getByTitle("Estimations").items
+      //         .filter(`SubmittedBy eq 'Dev Team'`)
+      //         .expand("Author", "ClientName")
+      //         .select("Author/Title", "Author/Id", "ClientName/Title", "ClientName/Id", "*")
+      //         .get().then((billingTeamMatrixData: any[]) => {
+      //           // billingTeamMatrixData.sort((a, b) => b.Id - a.Id);
+      //           billingTeamMatrixData.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime())
+      //           this.BindData(billingTeamMatrixData);
+      //         });
+      //       return;
+      //     }
+      //     else if (isBilling) {
+      //       const [billingData] = await Promise.all([
+      //         sp.web.lists.getByTitle("BillingTeamMatrix").items
+      //           .filter(`User/Id eq ${currentUser.Id}`)
+      //           .expand("User")
+      //           .select("User/EMail", "Location")
+      //           .get(),
+      //       ]);
+      //       // Fetch user locations from the billing team
+      //       userLoc = Array.from(new Set(billingData.map(b => b.Location)));
+      //       userClients = masterClientData.filter(c => userLoc.includes(c.Location));
+      //       if(userLoc.length === 0){
+      //         this.setState({islocationconfigured:false})
+      //       }
+      //     } else if (isSales) {
+      //       const userEmail = currentUser.Email;
+      //       userClients = masterClientData.filter(c =>
+      //         c.SalesPerson.includes(userEmail)
+      //       );
+      //       userLoc = Array.from(new Set(userClients.map(c => c.Location)));;
+      //     }
+    
+    
+      //     const fetchedestimations = userLoc.map((location: string) => {
+      //       return sp.web.lists.getByTitle("Estimations").items
+      //         .filter(`GDCOrOnsite eq '${location}'`)
+      //         .expand("Author", "ClientName")
+      //         .select("Author/Title", "Author/Id", "ClientName/Title", "ClientName/Id", "*").orderBy("Id", false)
+      //         .get()
+      //     });
+    
+      //     const estimationData: any[][] = await Promise.all(fetchedestimations);
+      //     const flatEstimationData = estimationData.reduce((acc, curr) => {
+      //       return acc.concat(curr);  // Concatenates each sub-array into a single array
+      //     }, []);
+      //     // flatEstimationData.sort((a, b) => b.Id - a.Id)
+      //     flatEstimationData.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime())
+      //     this.BindData(flatEstimationData);
+    
+    
+      //   } catch (error) {
+      //     console.error('Error fetching user groups:', error);
+      //   }
+      // }
+
+
+      
     public render(){
+        
         let columns = [
               {
                   name: "Edit",
@@ -207,6 +526,10 @@ export interface ProjectStatusViewProps {
 
 
         ]
+          if(this.state.unauthorized){
+            hideLoader();
+            return <UnAuthorized spContext={this.props.spContext}></UnAuthorized>
+          }
            if(this.state.redirect){
                     let url = `/ProjectStatus/${this.state.ItemID}`;
                 return (<Navigate to={url}/>);
@@ -214,6 +537,7 @@ export interface ProjectStatusViewProps {
                  else{
          return(
            <React.Fragment>
+             {this.state.islocationconfigured &&(
              <div className='container-fluid'>
             <div className='FormContent ViewTable'>
               <div className='title'> Project Status
@@ -254,7 +578,8 @@ export interface ProjectStatusViewProps {
                   </div>
               </div>
               </div>
-          
+             )}
+           {!this.state.islocationconfigured&& this.configurationValidtion()}
             </React.Fragment>
 
          )

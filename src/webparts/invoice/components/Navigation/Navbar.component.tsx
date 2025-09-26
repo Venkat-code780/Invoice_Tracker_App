@@ -141,7 +141,7 @@ private setAccordionFromPath = () => {
               {activeAccordion === 'masters' && (
                 <ul className="submenu">
                   <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/Client2"> <img src={Icons.Client} height={18} width={18} className='nav-icons' >
-                  </img>Client</NavLink></li>
+                  </img>Clients</NavLink></li>
                   <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/Location2"> <img src={Icons.Location} height={18} width={18} className='nav-icons' >
                   </img>Location</NavLink></li>
                   <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/BillingTeam"> <img src={Icons.BillingTeam} height={18} width={18} className='nav-icons'>

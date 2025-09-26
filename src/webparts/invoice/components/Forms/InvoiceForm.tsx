@@ -13,6 +13,7 @@ import DateUtilities from '../Utilities/Dateutilities';
 import { showToast } from '../Utilities/toastHelper';
 import { showLoader,hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component';
+import Icons from '../../assets/Icons';
 // import DateUtilities from '../Utilities/Dateutilities';
 
 
@@ -92,7 +93,9 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
     Receivedflag:'',
        isAdmin: false,
     isPermissionChecked:false,
-    isUnAuthorized:false
+    isUnAuthorized:false,
+    islocationconfigured:true,
+
 
 
   };
@@ -410,7 +413,7 @@ private handleinvoicenumber = (e:any) => {
   }
 
   private SubmitData = () => {
- 
+    showLoader();
     let data:any={}
     data.location= { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputLocation };
     data.ClientName= { val: this.state.ClientName, required: true, Name: 'Client Name', Type: ControlType.string, Focusid: this.inputClientName };
@@ -463,12 +466,13 @@ private handleinvoicenumber = (e:any) => {
     }
     else
     {
+      hideLoader();
        showToast('error',isValid.message);
     }
       // this.setState({ errorMessage: isValid.message });
 
   }
-  private checkDuplicates = (formData: any) => {
+  private checkDuplicates = async (formData: any) => {
     let TrList = 'Invoices';
     var filterString;
     try {
@@ -476,15 +480,15 @@ private handleinvoicenumber = (e:any) => {
         filterString = `InvoiceNumber eq '${formData.InvoiceNumber}'`;
       else
         filterString = `InvoiceNumber eq '${formData.InvoiceNumber}' and Id ne ${this.state.ItemID}`;
-      sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
-        then((response: any[]) => {
+       await sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
+        then(async (response: any[]) => {
           if (response.length > 0){
             showToast('error',"'Invoice Number' already exists");
             
             // this.setState({ errorMessage: 'Duplicate record not accept' });
           }
           else
-            this.insertorupdateListitem(formData);
+           await this.insertorupdateListitem(formData);
         });
     }
     catch (e) {
@@ -920,6 +924,10 @@ private handleinvoicenumber = (e:any) => {
           // Fetch user locations from the billing team
           userLoc = Array.from(new Set(billingData.map(b => b.Location)));
           userClients = masterClientData.filter(c => userLoc.includes(c.Location));
+          if(userLoc.length === 0)
+          {
+            this.setState({isUnAuthorized:true});
+          }
         } else if (isSales) {
           const userEmail = currentUser.Email;
           userClients = masterClientData.filter(c =>
@@ -966,6 +974,18 @@ private handleinvoicenumber = (e:any) => {
     }
   };
 
+  private configurationValidtion = () => {
+    var navBar = document.getElementsByClassName("sidebar");
+    var hamburgericon=document.getElementsByClassName("click-nav-icon");
+    hamburgericon[0]?.classList.add("d-none");
+    navBar[0]?.classList.add("d-none");
+    return (
+      <div className='noConfiguration'>
+        <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
+        <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+      </div>
+    );
+  }
 
 
 
@@ -999,9 +1019,10 @@ private handleinvoicenumber = (e:any) => {
 
     return (
 
-      <>
-
+        <React.Fragment>
         <ModalPopUp title={this.state.modalTitle} modalText={this.state.modalText} isVisible={this.state.showHideModal} onClose={this.handleClose} isSuccess={this.state.isSuccess}></ModalPopUp>
+         { this.state.islocationconfigured && ( 
+
          <div className='container-fluid'>
         <div className='FormContent'>
           <div className='title'> Invoice
@@ -1249,10 +1270,11 @@ private handleinvoicenumber = (e:any) => {
 
         </div>
 
+                )}
+               {!this.state.islocationconfigured&& this.configurationValidtion()}
 
 
-
-      </>
+      </React.Fragment>
 
     )
   }

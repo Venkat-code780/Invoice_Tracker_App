@@ -106,14 +106,14 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
     if (newProps.match.params.id == undefined)
       this.setState({ Location: '', SaveUpdateText: 'Submit', addNewProgram: false });
   }
-  private GetOnloadData = () => {
+  private GetOnloadData = async () => {
     let Billingteamlist = 'BillingTeamMatrix';
     let locationlist = 'Location';
 
     try {
 
       // get all the items from a list
-      sp.web.lists.getByTitle(locationlist).items.select('Title').get().then((Locations: any[]) => {
+      await sp.web.lists.getByTitle(locationlist).items.select('Title').get().then((Locations: any[]) => {
         const locationOptions = Locations.map(item => ({
           label: item.Title,
           value: item.Title
@@ -122,10 +122,10 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
       }
       );
 
-      sp.web.lists.getByTitle(Billingteamlist).items.expand("User").select("User/Title", "*").orderBy("Id", false).get().
+     await sp.web.lists.getByTitle(Billingteamlist).items.expand("User").select("User/Title", "*").orderBy("Id", false).get().
         then((response: any[]) => {
           //console.log(response);
-       
+           response.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime());
           this.BindData(response);
 
           hideLoader();
@@ -181,6 +181,7 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
   }
 
   private SubmitData = () => {
+    showLoader();
     let data = {
       location: { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputLocation },
       User: { val: this.state.SalesPersonIds, required: true, Name: 'User', Type: ControlType.people, Focusid: 'divPeopleUser' },
@@ -204,7 +205,10 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
     if (isValid.status)
       this.checkDuplicates(formdata);
     else
+    {
       showToast('error', isValid.message)
+      hideLoader();
+    }
     // this.setState({ errorMessage: isValid.message });
   }
 
@@ -215,11 +219,12 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
     else
       returnObj[event.target.name] = event.target.checked;
     this.setState(returnObj);
-    showLoader();
+ 
     await this.populateUsersForLocation(event.target.value);
   
   }
   private populateUsersForLocation = async (location: string) => {
+       showLoader();
     try {
       const items = await sp.web.lists.getByTitle('BillingTeamMatrix')
         .items.filter(`Location eq '${location}'`)
@@ -246,9 +251,10 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
         SalesPersonIds: ids,
         // force re-render
       });
-         hideLoader();
     } catch (error) {
       console.error('Error fetching users for location:', error);
+    }finally {
+      hideLoader();
     }
   };
 
@@ -273,41 +279,65 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
   //   }
 
   // Submit Form
-
-
-  private insertorupdateListitem = (formData: any, list: any) => {
-    this.setState({ loading: true });
-    if (this.state.ItemID == 0) {
-      try {
-        sp.web.lists.getByTitle(list).items.add(formData)
-          .then((res) => {
-            this.onSucess();
-            //console.log(res);
-          }, (Error) => {
-            console.log(Error);
-            this.onError();
-          })
-          .catch((err) => {
-            console.log(Error);
-            this.onError();
-          });
-      }
-      catch (e) {
-        console.log(e);
-      }
+private insertorupdateListitem = async (formData: any, list: any) => {
+  this.setState({ loading: true });
+     showLoader();
+  try {
+    if (this.state.ItemID === 0) {
+      // Add new item
+      const res = await sp.web.lists.getByTitle(list).items.add(formData);
+      console.log("Item added:", res);
+      this.onSucess();
     } else {
-      sp.web.lists.getByTitle(list).items.getById(this.state.ItemID).update(formData).then((res) => {
-        this.onUpdateSucess();
-        //console.log(res);
-      }, (Error) => {
-        console.log(Error);
-        this.onError();
-      }).catch((err) => {
-        this.onError();
-        console.log(err);
-      });
+      // Update existing item
+      const res = await sp.web.lists.getByTitle(list).items
+        .getById(this.state.ItemID)
+        .update(formData);
+      console.log("Item updated:", res);
+      this.onUpdateSucess();
     }
+  } catch (error) {
+    console.error("Error in insert/update:", error);
+    this.onError();
+  }finally {
+    hideLoader();
   }
+};
+
+
+  // private insertorupdateListitem = (formData: any, list: any) => {
+  //   this.setState({ loading: true });
+  //   if (this.state.ItemID == 0) {
+  //     try {
+  //       sp.web.lists.getByTitle(list).items.add(formData)
+  //         .then((res) => {
+  //           this.onSucess();
+  //           //console.log(res);
+  //         }, (Error) => {
+  //           console.log(Error);
+  //           this.onError();
+  //         })
+  //         .catch((err) => {
+  //           console.log(Error);
+  //           this.onError();
+  //         });
+  //     }
+  //     catch (e) {
+  //       console.log(e);
+  //     }
+  //   } else {
+  //     sp.web.lists.getByTitle(list).items.getById(this.state.ItemID).update(formData).then((res) => {
+  //       this.onUpdateSucess();
+  //       //console.log(res);
+  //     }, (Error) => {
+  //       console.log(Error);
+  //       this.onError();
+  //     }).catch((err) => {
+  //       this.onError();
+  //       console.log(err);
+  //     });
+  //   }
+  // }
 
   private onSucess = () => {
     showToast('success', 'Billing Team Matrix submitted successfully');
@@ -364,13 +394,13 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
           if (response.length > 0) {
             // Update existing record
             const existingItemId = response[0].Id;
-            this.setState({ ItemID: existingItemId }, () => {
-              this.insertorupdateListitem(formData, listName);
+            this.setState({ ItemID: existingItemId }, async () => {
+              await this.insertorupdateListitem(formData, listName);
             });
           } else {
             //  Insert new record
-            this.setState({ ItemID: 0 }, () => {
-              this.insertorupdateListitem(formData, listName);
+            this.setState({ ItemID: 0 }, async () => {
+              await this.insertorupdateListitem(formData, listName);
             });
           }
         });

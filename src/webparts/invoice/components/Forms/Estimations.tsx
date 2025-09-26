@@ -12,6 +12,9 @@ import SearchableDropdown from '../Shared/Searchbledropdown';
 import { showToast } from '../Utilities/toastHelper';
 import { showLoader,hideLoader } from '../Shared/Loader';
 import DateUtilities from '../Utilities/Dateutilities';
+import UnAuthorized from '../Shared/UnAuthorized.Component';
+import Icons from '../../assets/Icons';
+
 // import Loader from '../Shared/Loader';
 // import DatePicker from 'react-datepicker';
 
@@ -76,8 +79,10 @@ class Estimation extends React.Component<IEstimationsProps, IEstimationsState> {
         BulkProposals:[],
         BulkProposal:'',
         IsBulkProposal:false,
-        BulkProposalId:''
-       
+        BulkProposalId:'',
+        unauthorized: false,
+              islocationconfigured:true,
+
       
         
     };
@@ -148,7 +153,7 @@ class Estimation extends React.Component<IEstimationsProps, IEstimationsState> {
    private async getOnclickdata(ItemID: number){
       
         showLoader();
-          sp.web.lists.getByTitle('Estimations').items.getById(ItemID).select('GDCOrOnsite',
+         await sp.web.lists.getByTitle('Estimations').items.getById(ItemID).select('GDCOrOnsite',
     'ClientName/Title',  
     'ClientName/Id', 
     'TitleOfTheProject',
@@ -286,6 +291,7 @@ private fetchBulkProposalValues(bulkProposal: any) {
   // }
 
   private SubmitData=async (action: 'save' | 'submit')=>{
+             showLoader();
      let data={
           location: { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputLocation },
           ClientName: { val: this.state.ClientName, required: true, Name: 'Client Name', Type: ControlType.reactSelect, Focusid:'Client' },
@@ -299,7 +305,7 @@ private fetchBulkProposalValues(bulkProposal: any) {
      }
       
       let isValid = formValidation.checkValidations(data);
-      
+       
        var formdata={
           ClientNameId:parseInt(this.state.ClientName),
           GDCOrOnsite:this.state.Location,
@@ -320,6 +326,8 @@ private fetchBulkProposalValues(bulkProposal: any) {
   if(isValid.status){
       try{
        await this.checkDuplicates(formdata);
+                 this.state.History.push({"EstimationTitle": formdata.TitleoftheEstimation,"Project": formdata.TitleOfTheProject, "Status": formdata.EstimationStatus,"EstimationHour":formdata.EstimatedHour, "CreatedOn":new Date().toLocaleString('en-GB',{hour12:false})})
+      formdata['History']=JSON.stringify(this.state.History);
       }catch(e){
         console.log("Error in Submiting the data",e)
         showToast('error', 'Sorry! something went wrong');
@@ -385,7 +393,14 @@ private  async AddorUpdatelistItem(ItemID:number){
       const isDev = userGroups.some(g => g.Title === 'Dev Team'); 
       const isOnlyDev = isDev && !isAdmin && !isBilling && !isSales;
       const isOnlySales = isSales && !isAdmin && !isBilling && !isDev;
-      
+      const isAuthorized = isAdmin || isBilling || isSales || isDev;
+      if (!isAuthorized) {
+      this.setState({
+        unauthorized: true,
+        loading: false
+      });
+        return;
+      }
         const [billingData, clientData] = await Promise.all([
         sp.web.lists.getByTitle("BillingTeamMatrix").items
           .filter(`User/Id eq ${currentUser.Id}`)
@@ -437,6 +452,9 @@ private  async AddorUpdatelistItem(ItemID:number){
       // Fetch user locations from the billing team
       userLoc = Array.from(new Set(billingData.map(b => b.Location)));
       userClients = masterClientData.filter(c => userLoc.includes(c.Location));
+      if(userLoc.length === 0){
+      this.setState({ islocationconfigured: false });
+      }
     } else if (isSales) {
       const userEmail = currentUser.Email;
       userClients = masterClientData.filter(c =>
@@ -476,27 +494,25 @@ private deleteListItem(){
   }
 }
 
-  private checkDuplicates = (formData:any) => 
+  private checkDuplicates = async (formData:any) => 
     {
     let TrList = 'Estimations';
     var filterString;
     try {
-      showLoader();
       if (this.state.ItemID == 0)
         filterString = `ClientNameId eq '${formData.ClientNameId}' and TitleoftheEstimation eq '${formData.TitleoftheEstimation}'`;
       else
         filterString = `ClientNameId eq '${formData.ClientNameId}' and TitleoftheEstimation eq '${formData.TitleoftheEstimation}' and Id ne ${this.state.ItemID}`;
-      sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
-        then((response: any[]) => {
+      await sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
+        then(async (response: any[]) => {
           if (response.length > 0){
                 showToast('error',"Duplicate 'Title of the Estimation' not accepted/Proposal for this Item is alreday Approved or Rejected" );
                 this.setState({loading:false})
           }
             // this.setState({ errorMessage: "Duplicate 'Title of the Estimation' not accepted/Proposal for this Item is alreday Approved or Rejected" });
           else{
-                 this.insertorupdateListitem(formData);
-                  this.state.History.push({"EstimationTitle": formData.TitleoftheEstimation,"Project": formData.TitleOfTheProject, "Status": formData.EstimationStatus,"EstimationHour":formData.EstimatedHour, "CreatedOn":new Date().toLocaleString('en-GB',{hour12:false})})
-      formData['History']=JSON.stringify(this.state.History);
+                 await this.insertorupdateListitem(formData);
+        
          
 
           }
@@ -514,13 +530,13 @@ private deleteListItem(){
 
 
 
-  private insertorupdateListitem = (formData:any) => {
+  private insertorupdateListitem = async (formData:any) => {
     this.setState({ loading: true });
     try{
        showLoader();
       if (this.state.ItemID == 0) { 
       
-        sp.web.lists.getByTitle('Estimations').items.add(formData)
+       await sp.web.lists.getByTitle('Estimations').items.add(formData)
 
           .then((res) => {
            this.AddorUpdatelistItem(res.data.Id);
@@ -537,7 +553,7 @@ private deleteListItem(){
     
     }
     else {
-          sp.web.lists.getByTitle('Estimations').items.getById(this.state.ItemID).update(formData).then((res) => {
+        await  sp.web.lists.getByTitle('Estimations').items.getById(this.state.ItemID).update(formData).then((res) => {
             this.AddorUpdatelistItem(this.state.ItemID)
             this.onUpdateSucess();          
           }, (Error) => {
@@ -835,8 +851,18 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
 
 
 
-
-
+  private configurationValidtion = () => {
+    var navBar = document.getElementsByClassName("sidebar");
+    var hamburgericon=document.getElementsByClassName("click-nav-icon");
+    hamburgericon[0]?.classList.add("d-none");
+    navBar[0]?.classList.add("d-none");
+    return (
+      <div className='noConfiguration'>
+        <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
+        <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+      </div>
+    );
+  }
 
 
 
@@ -888,7 +914,9 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
  
    
     const showSaveButton = ItemID === 0 || ItemID === undefined || ItemID! ===0 || Status==='In-Draft';
-
+             if(this.state.unauthorized){
+      return  <UnAuthorized spContext={this.props.spContext}></UnAuthorized>
+    }
             if (this.state.Homeredirect) {
               // let message = this.state.modalText;
                    let url = `/Estimation_view`;
@@ -897,11 +925,12 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
         
                
            return (
-     
-                <>
-                 
+             
+                <React.Fragment>
+                
                    <ModalPopUp title={this.state.modalTitle} modalText={this.state.modalText} isVisible={this.state.showHideModal} onClose={this.handleClose} isSuccess={this.state.isSuccess}></ModalPopUp>                            
                   {/* {this.state.loading && <Loader />} */}
+                    {this.state.islocationconfigured &&(
                   <div className='container-fluid'>
                   <div className='FormContent'>
               <div className='title'> Estimations
@@ -1125,8 +1154,9 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
         
             </div>
             </div>
-             </>
-            
+                )}
+       {!this.state.islocationconfigured&& this.configurationValidtion()}
+</React.Fragment>             
            )
        }
     }

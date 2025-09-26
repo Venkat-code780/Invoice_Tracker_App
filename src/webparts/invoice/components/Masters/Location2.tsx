@@ -99,6 +99,7 @@ class LocationRe extends React.Component<LocationProps, LocationState>{
       // get all the items from a list
       sp.web.lists.getByTitle(TrList).items.orderBy("Id", false).get().
         then((response: any[]) => {
+          response.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime());
           this.BindData(response);
           hideLoader();
         });
@@ -156,6 +157,7 @@ class LocationRe extends React.Component<LocationProps, LocationState>{
 
   // Submit Form
   private SubmitData = () => {
+     showLoader();
     let data = {
       location: { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputProgram },
   
@@ -168,43 +170,70 @@ class LocationRe extends React.Component<LocationProps, LocationState>{
     if (isValid.status)
       this.checkDuplicates(formdata);
     else
+    {
+      hideLoader();
       showToast("error", isValid.message);
+    }
       // this.setState({ errorMessage: isValid.message });
   }
+private insertorupdateListitem = async (formData: any, list: any) => {
+  this.setState({ loading: true });
+  showLoader();
 
-  private insertorupdateListitem = (formData:any, list:any) => {
-    this.setState({ loading: true });
-    if (this.state.ItemID == 0) {
-      try {
-        sp.web.lists.getByTitle(list).items.add(formData)
-          .then((res) => {
-            this.onSucess();
-            //console.log(res);
-          }, (Error) => {
-            console.log(Error);
-            this.onError();
-          })
-          .catch((err) => {
-            console.log(Error);
-            this.onError();
-          });
-      }
-      catch (e) {
-        console.log(e);
-      }
+  try {
+    if (this.state.ItemID === 0) {
+      // Add new item
+      const res = await sp.web.lists.getByTitle(list).items.add(formData);
+      console.log("Item added:", res);
+      this.onSucess();
     } else {
-      sp.web.lists.getByTitle(list).items.getById(this.state.ItemID).update(formData).then((res) => {
-        this.onUpdateSucess();
-        //console.log(res);
-      }, (Error) => {
-        console.log(Error);
-        this.onError();
-      }).catch((err) => {
-        this.onError();
-        console.log(err);
-      });
+      // Update existing item
+      const res = await sp.web.lists.getByTitle(list).items
+        .getById(this.state.ItemID)
+        .update(formData);
+      console.log("Item updated:", res);
+      this.onUpdateSucess();
     }
+  } catch (error) {
+    console.error("Error in insert/update:", error);
+    this.onError();
   }
+};
+
+  // private insertorupdateListitem = (formData:any, list:any) => {
+  //   this.setState({ loading: true });
+  //   showLoader();
+  //   if (this.state.ItemID == 0) {
+  //     try {
+  //       sp.web.lists.getByTitle(list).items.add(formData)
+  //         .then((res) => {
+  //           this.onSucess();
+  //           //console.log(res);
+  //         }, (Error) => {
+  //           console.log(Error);
+  //           this.onError();
+  //         })
+  //         .catch((err) => {
+  //           console.log(Error);
+  //           this.onError();
+  //         });
+  //     }
+  //     catch (e) {
+  //       console.log(e);
+  //     }
+  //   } else {
+  //     sp.web.lists.getByTitle(list).items.getById(this.state.ItemID).update(formData).then((res) => {
+  //       this.onUpdateSucess();
+  //       //console.log(res);
+  //     }, (Error) => {
+  //       console.log(Error);
+  //       this.onError();
+  //     }).catch((err) => {
+  //       this.onError();
+  //       console.log(err);
+  //     });
+  //   }
+  // }
 
   private onSucess = () => {
     showToast("success", "Location submitted successfully");
@@ -226,7 +255,7 @@ class LocationRe extends React.Component<LocationProps, LocationState>{
     });
   }
 
-  private checkDuplicates = (formData:any) => {
+  private checkDuplicates = async (formData:any) => {
     let TrList = 'Location';
     var filterString;
     try {
@@ -234,13 +263,13 @@ class LocationRe extends React.Component<LocationProps, LocationState>{
         filterString = `Title eq '${formData.Title}'`;
       else
         filterString = `Title eq '${formData.Title}' and Id ne ${this.state.ItemID}`;
-      sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
-        then((response: any[]) => {
+       await sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
+        then(async (response: any[]) => {
           if (response.length > 0)
             showToast("error", "Duplicate record not accept");
             // this.setState({ errorMessage: 'Duplicate record not accept' });
           else
-            this.insertorupdateListitem(formData, TrList);
+           await this.insertorupdateListitem(formData, TrList);
         });
     }
     catch (e) {
@@ -266,10 +295,11 @@ class LocationRe extends React.Component<LocationProps, LocationState>{
     this.setState({ addNewProgram: false, showHideModal: false, Date: null, pr: '', IsActive: false });
   }
 
-  private onEditClickHandler = (id:any) => {
+  private onEditClickHandler = async (id:any) => {
+    showLoader();
     console.log('edit clicked', id);
     try {
-      sp.web.lists.getByTitle('Location').items.getById(id).get()
+      await sp.web.lists.getByTitle('Location').items.getById(id).get()
         .then((response) => {
           console.log('response:', response);
           this.setState({
@@ -282,15 +312,13 @@ class LocationRe extends React.Component<LocationProps, LocationState>{
           },()=>{
              document.getElementById('txtLocation')?.focus();
           });
-          console.log(this.state);
         })
-        .catch(e => {
-          console.log('Failed to fetch :' + e);
-        });
     }
     catch (e) {
       console.log('failed to fetch data for record :' + id);
-    }
+    }finally{
+      hideLoader();
+    } 
   }
 
   public resetImportField = () => {
