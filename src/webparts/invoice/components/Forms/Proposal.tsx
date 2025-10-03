@@ -292,12 +292,6 @@ islocationconfigured:true,
 
   private handleText = (event: any) => {
    
-    //     let returnObj: Record<string, any> = {};
-    // if (event.target.name != 'IsActive')
-    //   returnObj[event.target.name] = event.target.value;
-    // else
-    //   returnObj[event.target.name] = event.target.checked;
-    // this.setState(returnObj);
     const { name, value } = event.target;
     this.setState({ [name]: value });
 
