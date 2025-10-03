@@ -94,12 +94,12 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
         if(isAdminUser){
               this.GetOnloadData();
         }
-        this.setState({isAdmin:isAdminUser,isPermissionChecked:true,isUnAuthorized:!isAdminUser},()=>{hideLoader();})
+        this.setState({isAdmin:isAdminUser,isPermissionChecked:true,isUnAuthorized:!isAdminUser})
            
           }
           catch(error){
                console.error('Error checking admin status:', error);
-                this.setState({ isAdmin: false, isPermissionChecked:true},()=>{hideLoader()});
+                this.setState({ isAdmin: false, isPermissionChecked:true});
           }
     }
   public componentWillReceiveProps(newProps: any) {
@@ -542,6 +542,7 @@ private insertorupdateListitem = async (formData: any, list: any) => {
 
     ];
       if (this.state.isUnAuthorized) {
+        hideLoader();
       return <UnAuthorized spContext={this.props.spContext}></UnAuthorized>
     }
     else if (this.state.redirect) {

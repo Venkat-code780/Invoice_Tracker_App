@@ -1094,9 +1094,8 @@ private handleinvoicenumber = (e:any) => {
                       refElement={this.inputInvoicefor} onBlur={undefined}
                     />
                   </div>
-                         </div>
-                           <div className="row pt-2 px-2">
-                                   <div className="col-md-3">
+                          
+                     <div className="col-md-3 my-2">
                     <InputText
                       type='text'
                       label={`Total PO Value${this.state.currencySymbols ? ` (${this.state.currencySymbols})` : ''}`}
@@ -1108,7 +1107,7 @@ private handleinvoicenumber = (e:any) => {
                       refElement={this.inputTotalPOValue} onBlur={undefined}
                     />
                   </div>
-                        <div className="col-md-3">
+                        <div className="col-md-3 my-2">
                     <InputText
                       type='text'
                       label={`Available Balance ${this.state.currencySymbols ? ` (${this.state.currencySymbols})` : ''}`}
@@ -1120,7 +1119,7 @@ private handleinvoicenumber = (e:any) => {
                       refElement={this.inputAvailableBalance} onBlur={undefined}
                     />
                   </div>
-                     <div className="col-md-3">
+                     <div className="col-md-3 my-2">
                     <InputText
                       type='text'
                       InpuId='txtInvoicedAmount'
@@ -1133,7 +1132,7 @@ private handleinvoicenumber = (e:any) => {
                       refElement={this.inputInvoicedAmount} onBlur={undefined}
                     />
                   </div>
-                   <div className="col-md-3">
+                   <div className="col-md-3 my-2">
                     <InputText
                       type='text'
                       label={"Invoice Number"}
@@ -1144,12 +1143,8 @@ private handleinvoicenumber = (e:any) => {
                       onChange={this.handleinvoicenumber}
                       refElement={this.inputInvoiceNumber} onBlur={undefined}
                     />
-                  </div>
-
-                            </div>
-
-                             <div className="row pt-2 px-2">
-                                 <div className="col-md-3">
+                  </div>                       
+                                 <div className="col-md-3 my-2">
                                             <div className="light-text c-people-picker">
                                              <label className='lblPeoplepicker'>Submitted By <span className="mandatoryhastrick">*</span></label>
                                               <div className="" id="divPeopleUser">
@@ -1169,7 +1164,7 @@ private handleinvoicenumber = (e:any) => {
                                               </div>
                                             </div>
                                           </div>
-                                      <div className="col-md-3">
+                                      <div className="col-md-3 my-2">
                     <div className="light-text div-readonly">
                       <label className="z-in-9">Invoiced Date<span className="mandatoryhastrick">*</span></label>
                       <div className="custom-datepicker" id="DivInvoicedDate">
@@ -1177,7 +1172,7 @@ private handleinvoicenumber = (e:any) => {
                       </div>
                     </div>
                   </div>
-                       <div className="col-md-3">
+                       <div className="col-md-3 my-2">
                         <div className="light-text">
                         <label >Invoice Status<span className="mandatoryhastrick">*</span></label>
                         <select className="form-control" required={true}  name="InvoiceStatus"  value={this.state.InvoiceStatus} onChange={this.handleProjectstatus} disabled={this.state.isEditMode && this.state.Receivedflag=='Received'}  title="InvoiceStatus" itemRef='InvoiceStatus' ref={this.inputInvoiceStatus}>
@@ -1189,7 +1184,7 @@ private handleinvoicenumber = (e:any) => {
                     
                         </div>
                     </div>
-                     <div className="col-md-3">
+                     <div className="col-md-3 my-2">
                     <div className="light-text div-readonly">
                       <label className="z-in-9">Payment Date {this.state.InvoiceStatus=='Received' &&(<span className="mandatoryhastrick">*</span>)}</label>
                       <div className="custom-datepicker" id="DivPaymentDate">

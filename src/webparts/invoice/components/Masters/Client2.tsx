@@ -97,12 +97,12 @@ class Client2 extends React.Component<ClientProps, ClientState>{
         if(isAdminUser){
               this.GetOnloadData();
         }
-        this.setState({isAdmin:isAdminUser,isPermissionChecked:true,isUnAuthorized:!isAdminUser},()=>{hideLoader();})
+        this.setState({isAdmin:isAdminUser,isPermissionChecked:true,isUnAuthorized:!isAdminUser},)
            
           }
           catch(error){
                console.error('Error checking admin status:', error);
-                this.setState({ isAdmin: false, isPermissionChecked:true},()=>{hideLoader()});
+                this.setState({ isAdmin: false, isPermissionChecked:true});
           }
     }
   public componentWillReceiveProps(newProps:any) {
@@ -539,7 +539,10 @@ private async insertorupdateListitem(formData: any, list: any) {
 
     ];
      if (this.state.isUnAuthorized) {
+      hideLoader();
       return <UnAuthorized spContext={this.props.spContext}></UnAuthorized>
+      
+      
     }
     //var DatePicker = require("react-bootstrap-date-picker");
     else{

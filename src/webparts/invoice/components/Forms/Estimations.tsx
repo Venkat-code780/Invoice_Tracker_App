@@ -1052,11 +1052,8 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
                             refElement={this.inputHours}
                             onBlur={this.handleonBlur}
                           />
-                   </div>
-                     
-                  
-                     <div className="row pt-2 px-2">                       
-                  <div className="col-md-3">
+                   </div>                 
+                  <div className="col-md-3 my-2">
                   <div className="light-text">
                         <label >Estimations for<span className="mandatoryhastrick">*</span></label>
                         <select className="form-control" required={true} name="Estimation" value={this.state.Estimation} title="Estimationsfor" onChange={this.handleChange1} itemRef='Estimation' ref={this.inputEstimation}>
@@ -1069,7 +1066,7 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
                         </select>
                     </div>
                     </div>
-                    <div className="col-md-3">
+                    <div className="col-md-3 my-2">
                     <InputText
                             type='text'
                             label={"Title of the Estimation"}
@@ -1081,7 +1078,7 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
                             onBlur={this.handleonBlur}
                           />
                     </div>
-                            <div className="col-md-3">
+                            <div className="col-md-3 my-2">
                                             <div className="light-text div-readonly">
                                                 <label className="z-in-9">Submitted Date<span className="mandatoryhastrick">*</span></label>
                                                 <div className="custom-datepicker" id="DivSubmittedDate">
@@ -1091,7 +1088,7 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
                                         </div>
                
                     </div>
-                    </div>
+                 
                  
                     <div className="row pt-2 px-2">   
                   <div className="col-md-12">

@@ -52,11 +52,11 @@ class InvoiceView extends React.Component<InvoiceViewProps, InvoiceViewState> {
   }
   public async componentDidMount() {
 
-    
+       showLoader();
     await this.checkpermisssion();
-   showLoader();
+
    await this.getCurrentUserGroups()
-      hideLoader();
+     
     // this.GetOnloadData();
     document.getElementById('ddlsearch')?.focus();
 
@@ -219,14 +219,13 @@ class InvoiceView extends React.Component<InvoiceViewProps, InvoiceViewState> {
       ];
       const isAdminuser = userGroups.some(group => adminGroups.includes(group.Title)
       );
-      this.setState({ isAdmin: isAdminuser, isPermissionChecked: true, isUnAuthorized: !isAdminuser }, () => { hideLoader(); })
+      this.setState({ isAdmin: isAdminuser, isPermissionChecked: true, isUnAuthorized: !isAdminuser })
 
     }
     catch (error) {
       console.error('Error checking admin status:', error);
       this.setState(
-        { isAdmin: false, isPermissionChecked: true },
-        () => { hideLoader(); }
+        { isAdmin: false, isPermissionChecked: true }
       );
     }
   }
@@ -461,7 +460,9 @@ private getYears = (data: any[]) => {
     ]
 
     if (this.state.isUnAuthorized) {
+       hideLoader();
       return <UnAuthorized spContext={this.props.spContext}></UnAuthorized>
+     
     }
     else if (this.state.redirect) {
       let url = `/InvoiceForm/${this.state.ItemID}`;

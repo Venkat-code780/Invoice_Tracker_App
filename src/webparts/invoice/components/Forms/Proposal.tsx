@@ -1228,7 +1228,7 @@ islocationconfigured:true,
                 <div className="col-md-3">
                   <div className="light-text">
                     <label >Title of the Project<span className="mandatoryhastrick">*</span></label>
-                    {(this.state.isConsultantSelected || this.state.ischecked) ? (
+                    {(this.state.isConsultantSelected) ? (
                       <InputText
                         type='text'
                         label="Title of the Project"
@@ -1236,7 +1236,7 @@ islocationconfigured:true,
                         value={this.state.ProjectName}
                         isRequired={true}
                         onChange={this.handleText}
-                        disabled={!this.state.ischecked} 
+                        // disabled={!this.state.ischecked} 
 
                         refElement={this.inputTitleoftheProject} onBlur={undefined}
                       />
@@ -1254,7 +1254,7 @@ islocationconfigured:true,
                   </div>
                 </div>
              
-                  <div className="col-md-3">
+                  <div className="col-md-3 my-1">
                     <div className="light-text">
                       <label >Title of the Proposal<span className="mandatoryhastrick">*</span></label>
                       {(this.state.isConsultantSelected || this.state.ischecked) ? (
@@ -1264,7 +1264,7 @@ islocationconfigured:true,
                           name={"TitleoftheProposal"}
                           value={this.state.TitleoftheProposal}
                           isRequired={true}
-                          disabled={!this.state.ischecked}
+                          // disabled={!this.state.ischecked}
                           onChange={this.handleText}
 
                           refElement={this.inputProposalTitle} onBlur={undefined}
@@ -1282,7 +1282,7 @@ islocationconfigured:true,
                       )}
                     </div>
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-md-3 my-1">
                     <InputText
                       type='text'
                       label={"Estimation Hours"}
@@ -1295,7 +1295,7 @@ islocationconfigured:true,
                       refElement={this.inputEstimatedHours} onBlur={undefined}
                     />
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-md-3 my-1">
                     <div className="light-text c-people-picker">
                      <label className='lblPeoplepicker'>Submitted By <span className="mandatoryhastrick">*</span></label>
                       <div className="" id="divPeopleUser">
@@ -1315,7 +1315,7 @@ islocationconfigured:true,
                       </div>
                     </div>
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-md-3 my-1">
                     <div className="light-text div-readonly">
                       <label className="z-in-9">Submitted Date<span className="mandatoryhastrick">*</span></label>
                       <div className="custom-datepicker" id="DivSubmittedDate">
@@ -1326,7 +1326,7 @@ islocationconfigured:true,
 
               
              
-                  <div className="col-md-3">
+                  <div className="col-md-3 my-1">
                     <InputText
                       InpuId='txtAmount'
                       type='text'
@@ -1342,7 +1342,7 @@ islocationconfigured:true,
                       
                     />
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-md-3 my-1">
                     <div className="light-text">
                       <label >Status <span className="mandatoryhastrick">*</span></label>
                       <select className="form-control" required={true} onChange={this.handleText} disabled={(this.state.isEditMode && this.state.onLoadStatus !== 'In-Progress')||!this.state.isdevTeam} name="Status" value={this.state.Status} title="Status" itemRef='Status' ref={this.inputStatus}>
@@ -1360,15 +1360,14 @@ islocationconfigured:true,
                     checked={this.state.ischecked}
 
                     isforMasters={false} onChange={this.handleCheckbox} isdisable={(this.state.isEditMode && this.state.onLoadStatus !== 'In-Progress')||!this.state.isdevTeam}  label={' Is Bulk Proposal'} /> */}
-
-                 <div className="row pt-2 px-2">
-                  <div className="col-md-12">
+           
+                  <div className="col-md-12 my-1">
                     <div className="light-text">
                       <label>Reason</label>
                       <textarea className="form-control requiredinput" value={this.state.Remarks} onChange={this.handleChange} disabled={(this.state.isEditMode && this.state.onLoadStatus !== 'In-Progress')||!this.state.isdevTeam}  placeholder="" id="txtTargetDescription" name="Remarks" ref={this.inputRemarks} ></textarea>
                     </div>
                   </div>
-                </div>
+           
               
               
                   <div className="col-md-12">
