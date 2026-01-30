@@ -69,7 +69,9 @@ export default class InvoiceTracker extends React.Component<IInvoiceProps> {
     return(
       <HashRouter>
         <div className='menu-hide wrapper d-flex align-items-stretch' id='sideMenuNav'>
+         
           <NavBar {...this.props} {...this.state}></NavBar>
+           <div className='borderline'></div>
           <Routesitems {...this.state} {...this.props}></Routesitems>
               
               <ToastContainer/>

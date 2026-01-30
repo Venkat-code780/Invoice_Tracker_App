@@ -28,6 +28,7 @@
     "email-validator": "^2.0.4",
     "jsx-runtime": "^1.2.0",
     "react": "^17.0.1",
+    "react-collapse": "^5.1.1",
     "react-data-table-component": "^7.7.0",
     "react-datepicker": "^8.3.0",
     "react-dom": "^17.0.1",

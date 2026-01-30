@@ -3,8 +3,8 @@ import * as React from 'react';
 import {Suspense} from 'react';
 import { Route,Routes, useLocation, useParams} from 'react-router-dom';
 import Estimation from '../Forms/Estimations';
-import Location2 from '../Masters/Location2';
-import Client2 from '../Masters/Client2';
+import Location from '../Masters/Location';
+import Client from '../Masters/Client';
 import BillingTeamMatrix from '../Masters/BillingTeam';
 import EstimationView from '../Views/Estimation_view';
 import ProposalView from '../Views/Proposal_View';
@@ -18,6 +18,7 @@ import InvoiceForm from '../Forms/InvoiceForm';
  import Dashboard from '../Dashboards/Dashboard';
  import Reports from '../Reports/Reports';
 
+
 export interface RoutesProps {
     spContext: any;
     spHttpClient: any;
@@ -30,12 +31,12 @@ class Routesitems extends React.Component<RoutesProps, RoutesState> {
      public render() {
         const ClientWrapper=(props:any)=>{
             let params=useParams();
-            return <Client2 {...this.context}{...this.props} {...{...props,match: {params}}} />
+            return <Client {...this.context}{...this.props} {...{...props,match: {params}}} />
           
         }
            const LocationWrapper=(props:any)=>{
             let params=useParams();
-            return <Location2 {...this.context}{...this.props} {...{...props,match: {params}}} />
+            return <Location {...this.context}{...this.props} {...{...props,match: {params}}} />
           
         }
         const BillingTeamWrapper=(props:any)=>{
@@ -183,13 +184,14 @@ class Routesitems extends React.Component<RoutesProps, RoutesState> {
             return <Reports {...this.context}{...this.props} {...{...props,match: {params}}} />
           
         }
+        
         return(
               
         
             <Suspense fallback={<div></div>}>
              <Routes>
-                <Route path="/Client2/:id?" element={<ClientWrapper {...this.props} />} />
-                <Route path="/Location2/:id?" element={<LocationWrapper {...this.props} />} />
+                <Route path="/Client/:id?" element={<ClientWrapper {...this.props} />} />
+                <Route path="/Location/:id?" element={<LocationWrapper {...this.props} />} />
                 <Route path="/BillingTeam/:id?" element={<BillingTeamWrapper {...this.props} />} />
                 <Route path='/Estimation/:id?' element={<EstimationWrapperWithKey/>} />
                 <Route path='/Proposal/:id?' element={<ProposalWrapperWrapperWithKey/>} />
@@ -198,14 +200,15 @@ class Routesitems extends React.Component<RoutesProps, RoutesState> {
                 <Route path='/PO/:id?' element={<POWrapperWithKey/>} />
                 <Route path='/ProjectStatus/:id?' element={<ProjectStatusWrapperWithKey/>} />
                  {/* <Route path='/InvoiceForm/:id?' element={<InvoicepageWrapper/>} /> */}
-                <Route path="/Estimation_view/:message?" element={<EstimationViewWrapper {...this.props} />} />
-                <Route path="/Proposal_View/:message?" element={<ProposalViewWrapper {...this.props} />} />
+                <Route path="/Estimation_view" element={<EstimationViewWrapper {...this.props} />} />
+                <Route path="/Proposal_View" element={<ProposalViewWrapper {...this.props} />} />
                 <Route path="/PO_View" element={<POViewWrapper {...this.props} />} />
                 <Route path="/ProjectStatus_View" element={<ProjectStatusViewWrapper {...this.props} />} />
                 <Route path="/Invoice_View" element={<InvoiceViewWrapper {...this.props} />} />
                   <Route path="/Dashboard" element={<DashboadWrapper {...this.props} />} />
                   <Route path="/" element={<DashboadWrapper {...this.props} />} />
                     <Route path="/Reports" element={<ReportsWrapper {...this.props} />} />
+    
 
              </Routes>
              </Suspense>

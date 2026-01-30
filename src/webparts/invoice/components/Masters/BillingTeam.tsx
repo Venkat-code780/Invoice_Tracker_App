@@ -80,7 +80,7 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
 
   public componentDidMount() {
     //console.log('Project Code:', this.props);
-    document.getElementById('btnSubmit')?.focus();
+    // document.getElementById('btnSubmit')?.focus();
     showLoader();
     // this.GetOnloadData();
     this.getCurrentUserGroups();
@@ -128,7 +128,7 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
            response.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime());
           this.BindData(response);
 
-          hideLoader();
+       
         });
     }
     catch (e) {
@@ -140,6 +140,8 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
         isSuccess: false
       });
       console.log('failed to fetch data');
+    }finally {
+      hideLoader();
     }
 
   }
@@ -183,8 +185,8 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
   private SubmitData = () => {
     showLoader();
     let data = {
-      location: { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputLocation },
-      User: { val: this.state.SalesPersonIds, required: true, Name: 'User', Type: ControlType.people, Focusid: 'divPeopleUser' },
+      location: { val: this.state.Location, required: true, Name: "'Location'", Type: ControlType.string, Focusid: this.inputLocation },
+      User: { val: this.state.SalesPersonIds, required: true, Name: "'User'", Type: ControlType.people, Focusid: 'divPeopleUser' },
 
       // Sales_x0020_Person_x0020_Name: { val: this.state.SalesPersonIds, required: true, Name: 'Sales Person Name', Type: ControlType.people,focusid: this.inputSalesPersonName },
       // Alternate_x0020_Sales_x0020_Pers: { val: this.state.AlternativeSalesPersonIds, required: true, Name: 'Alternative Sales Person Name', Type: ControlType.string ,focusid: this.inputAlternativeSalesPersonName },
@@ -245,11 +247,12 @@ class BillingTeam extends React.Component<BillingteamProps, BillingteamState> {
           });
         }
       });
-
+        await new Promise<void>((resolve) => {
       this.setState({
         SalesPersonEmails: emails,
         SalesPersonIds: ids,
         // force re-render
+      },()=>resolve());
       });
     } catch (error) {
       console.error('Error fetching users for location:', error);
@@ -443,12 +446,12 @@ private insertorupdateListitem = async (formData: any, list: any) => {
     this.setState({ addNewProgram: false, showHideModal: false, Date: null, pr: '', IsActive: false });
   }
 
-  private onEditClickHandler = (id: any) => {
-    showLoader();
-    console.log('edit clicked', id);
+  private onEditClickHandler =async (id: any) => {
+   
+       showLoader();
     try {
-
-      sp.web.lists.getByTitle('BillingTeamMatrix').items.getById(id).expand("User").select("User/EMail,User/Id,*").get()
+        
+      await sp.web.lists.getByTitle('BillingTeamMatrix').items.getById(id).expand("User").select("User/EMail,User/Id,*").get()
         .then((response) => {
           console.log('response:', response);
           let SalesPersonEmails: any = [];
@@ -467,9 +470,10 @@ private insertorupdateListitem = async (formData: any, list: any) => {
             errorMessage: ""
           },()=>{
             document.getElementById('ddlLocation')?.focus();
+            hideLoader();
           });
           console.log(this.state);
-          hideLoader();
+     
         })
         .catch(e => {
           console.log('Failed to fetch :' + e);
@@ -477,7 +481,10 @@ private insertorupdateListitem = async (formData: any, list: any) => {
     }
     catch (e) {
       console.log('failed to fetch data for record :' + id);
+      hideLoader();
     }
+    
+    
   }
 
   public resetImportField = () => {
@@ -534,7 +541,13 @@ private insertorupdateListitem = async (formData: any, list: any) => {
       {
         name: "User",
         selector: (row: any, i: any) => row.User,
-        cell: (row: any) => <div className='divUser' dangerouslySetInnerHTML={{ __html: row.User }} />,
+          cell: (row:any)=>  <div
+                 className='divUser'
+                 onClick={() => this.onEditClickHandler(row.Id)} // manually trigger
+                 dangerouslySetInnerHTML={{ __html: row.User}}
+                 style={{ cursor: 'pointer' }}
+               />,
+        // cell: (row: any) => <div className='divUser' dangerouslySetInnerHTML={{ __html: row.User }} />,
         sortable: true
       }
 

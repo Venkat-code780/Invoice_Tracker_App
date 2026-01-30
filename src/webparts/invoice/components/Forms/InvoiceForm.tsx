@@ -14,6 +14,7 @@ import { showToast } from '../Utilities/toastHelper';
 import { showLoader,hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component';
 import Icons from '../../assets/Icons';
+import SearchableDropdown from '../Shared/Searchbledropdown';
 // import DateUtilities from '../Utilities/Dateutilities';
 
 
@@ -187,7 +188,7 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
       catch(error){
              console.error('Error checking admin status:', error);
       this.setState(
-        { isAdmin: false, isPermissionChecked: true },
+        { isAdmin: false, isPermissionChecked: true},
         () => { hideLoader(); }
       );
       }
@@ -218,6 +219,14 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
     
       'Id').expand('SubmittedBy').get().then( (Response) => {
        console.log(Response);
+       let currencySymbol = '';
+    if (Response.ProposalFor === 'AUS') {
+      currencySymbol = 'AU$';
+    } else if (Response.ProposalFor === 'GDC') {
+      currencySymbol = '₹';
+    } else if (Response.ProposalFor === 'Onsite') {
+      currencySymbol = '$';
+    }
         this.setState({
 
           addNewProgram: true,
@@ -235,12 +244,15 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
          InvoicedDate:Response.SubmittedDate,
          InvoiceStatus:Response.PaymentStatus,
          PaymentDate:Response.PaymentDate,
+         Remarks:Response.Remarks,
           ItemID:Response.Id,
           SaveUpdateText: 'Update',
           errorMessage: "",
           ClientId:Response.ClientID,
           POId:Response.POID,
-          Receivedflag:Response.PaymentStatus
+          Receivedflag:Response.PaymentStatus,
+          currencySymbols:currencySymbol
+
           
 
         })
@@ -258,7 +270,8 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
           files.map((selItem: any, index: any) => {
             let name = selItem.File.Name;
             var fileUrl = selItem.File.ServerRelativeUrl;
-            let obj = { URL: fileUrl, IsDeleted: false, IsNew: false, name: name, FileID: selItem.Id };
+            const fileNameWithoutPrefix = name.replace(/^\d+_IN_/, '');
+            let obj = { URL: fileUrl, IsDeleted: false, IsNew: false, name: fileNameWithoutPrefix, FileID: selItem.Id };
             filesArry.push(obj);
           });
           this.setState({ fileArr: filesArry })
@@ -293,7 +306,7 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
     try{
       showLoader();
      const TrList = 'PODetails';
-    await sp.web.lists.getByTitle(TrList).items.filter(`PONumber eq '${selectedponumber}'`).select('Title', 'ID').get().then((Response: any[]) => {
+    await sp.web.lists.getByTitle(TrList).items.filter(`PONumber eq '${selectedponumber}'`).select('Title', 'ID').top(2000).get().then((Response: any[]) => {
       console.log(Response);
   
       this.setState({
@@ -328,6 +341,7 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
         ClientNames: [],      
          PONumber: '',
          PONumbers: [],
+         History:[],
          InvoiceFor:'',
          Invoicesfor:[],
          TotalPOValue:'',
@@ -366,14 +380,15 @@ private handleinvoicenumber = (e:any) => {
       newFileArry = this.state.fileArr.filter((file: any) => {
         return file.IsNew == true;
       })
-      this.deleteListItem();
+       await this.deleteListItem();
       if (newFileArry.length > 0) {
         0
         for (const i in newFileArry) {
           let file: any = newFileArry[i];
           let siteAbsoluteURL = this.props.context.pageContext.web.serverRelativeUrl;
-          await sp.web.getFolderByServerRelativeUrl(siteAbsoluteURL + "/InvoicesDocs").files.add(file.name, file, true);
-          const item1 = await sp.web.getFileByServerRelativePath(siteAbsoluteURL + "/InvoicesDocs/" + file.name).getItem();
+          let fileName = `${ItemID}_IN_${file.name}`; 
+          await sp.web.getFolderByServerRelativeUrl(siteAbsoluteURL + "/InvoicesDocs").files.add(fileName, file, true);
+          const item1 = await sp.web.getFileByServerRelativePath(siteAbsoluteURL + "/InvoicesDocs/" + fileName).getItem();
   
           item1.update({
             RecordID: ItemID
@@ -381,22 +396,37 @@ private handleinvoicenumber = (e:any) => {
           });
           processedFiles = processedFiles + 1;
           if (newFileArry.length == processedFiles) {
-            this.onSucess();
+            // this.onSucess();
   
           }
   
         }
       }
     }
-    private deleteListItem() {
-      let list = sp.web.lists.getByTitle("InvoicesDocs");
-      if (this.state.delfileArr.length > 0) {
-        this.state.delfileArr.map((selItem, index) => {
-          let itemId = selItem['FileID'];
-          list.items.getById(itemId).delete();
-        });
+    // private deleteListItem() {
+    //   let list = sp.web.lists.getByTitle("InvoicesDocs");
+    //   if (this.state.delfileArr.length > 0) {
+    //     this.state.delfileArr.map((selItem, index) => {
+    //       let itemId = selItem['FileID'];
+    //       list.items.getById(itemId).delete();
+    //     });
+    //   }
+    // }
+     private async deleteListItem() {
+          const list = sp.web.lists.getByTitle("InvoicesDocs");
+          if (this.state.delfileArr.length > 0) {
+              // Use a for...of loop to delete files sequentially
+              for (const selItem of this.state.delfileArr) {
+                  const itemId = selItem['FileID'];
+                  try {
+                      await list.items.getById(itemId).delete();
+                      console.log(`File with ID ${itemId} deleted successfully.`);
+                  } catch (error) {
+                      console.error(`Error deleting file with ID ${itemId}:`, error);
+                  }
+              }
+          }
       }
-    }
 
 
    private handleExecutionType = (e:any) => {
@@ -415,17 +445,17 @@ private handleinvoicenumber = (e:any) => {
   private SubmitData = () => {
     showLoader();
     let data:any={}
-    data.location= { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputLocation };
-    data.ClientName= { val: this.state.ClientName, required: true, Name: 'Client Name', Type: ControlType.string, Focusid: this.inputClientName };
-    data.PONumber={val: this.state.PONumber, required: true, Name: 'PO Number', Type: ControlType.string, Focusid: this.inputPonumber};
-    data.AvailableBalance={val: (this.state.AvailableBalance), required: true, Name: 'AvailableBalance', Type: ControlType.string, Focusid: this.inputAvailableBalance};
-    data.InvoicedAmount={val:parseInt(this.state.InvoicedAmount), required: true, Name: 'Invoiced Amount', Type: ControlType.number, Focusid: this.inputInvoicedAmount};
-    data.InvoiceNumber={val: this.state.InvoiceNumber, required: true, Name: 'Invoice Number', Type: ControlType.string, Focusid: this.inputInvoiceNumber};
-    data.SubmittedBy= { val: this.state.SubmittedById, required: true, Name: 'Sales Person Name', Type: ControlType.people, Focusid:'divPeopleUser'}
-    data.invoicedDate={val: this.state.InvoicedDate, required: true, Name: 'Invoiced Date', Type: ControlType.date, Focusid:'DivInvoicedDate'};
-    data.InvoiceStatus={val: this.state.InvoiceStatus, required: true, Name: 'Payment Status', Type: ControlType.string, Focusid: this.inputInvoiceStatus};
+    data.location= { val: this.state.Location, required: true, Name: "'Location'", Type: ControlType.string, Focusid: this.inputLocation };
+    data.ClientName= { val: this.state.ClientName, required: true, Name: "'Client Name'", Type: ControlType.reactSelect, Focusid:'Client' };
+    data.PONumber={val: this.state.PONumber, required: true, Name: "'PO Number'", Type: ControlType.reactSelect, Focusid:'PONumber'};
+    data.AvailableBalance={val: (this.state.AvailableBalance), required: true, Name: "'AvailableBalance'", Type: ControlType.string, Focusid: this.inputAvailableBalance};
+    data.InvoicedAmount={val:parseInt(this.state.InvoicedAmount), required: true, Name: "'Invoiced Amount'", Type: ControlType.number, Focusid: this.inputInvoicedAmount};
+    data.InvoiceNumber={val: this.state.InvoiceNumber, required: true, Name: "'Invoice Number'", Type: ControlType.string, Focusid: this.inputInvoiceNumber};
+    data.SubmittedBy= { val: this.state.SubmittedById, required: true, Name: "'Sales Person Name'", Type: ControlType.people, Focusid:'divPeopleUser'}
+    data.invoicedDate={val: this.state.InvoicedDate, required: true, Name: "'Invoiced Date'", Type: ControlType.date, Focusid:'DivInvoicedDate'};
+    data.InvoiceStatus={val: this.state.InvoiceStatus, required: true, Name: "'Payment Status'", Type: ControlType.string, Focusid: this.inputInvoiceStatus};
     if(this.state.InvoiceStatus=='Received'){
-         data.PaymentDate={val: this.state.PaymentDate, required: true, Name: 'Payment Date', Type: ControlType.date, Focusid:'DivPaymentDate'};
+         data.PaymentDate={val: this.state.PaymentDate, required: true, Name: "'Payment Date'", Type: ControlType.date, Focusid:'DivPaymentDate'};
     }
     //  data.Remarks={val: this.state.Remarks, required: true, Name: 'Remarks', Type: ControlType.string, Focusid: this.inputRemarks};
       // data.Attachment= { val: this.state.fileArr, required: true, Name: '', Type: ControlType.file };
@@ -484,7 +514,7 @@ private handleinvoicenumber = (e:any) => {
         then(async (response: any[]) => {
           if (response.length > 0){
             showToast('error',"'Invoice Number' already exists");
-            
+            hideLoader();
             // this.setState({ errorMessage: 'Duplicate record not accept' });
           }
           else
@@ -522,8 +552,6 @@ private handleinvoicenumber = (e:any) => {
   }
     catch(error){
       console.log("error in add Item",error)
-    }finally{
-      hideLoader();
     }
       
   }
@@ -559,13 +587,13 @@ private handleinvoicenumber = (e:any) => {
     try{
       showLoader();
     const TrList = 'Clients';
-    await sp.web.lists.getByTitle(TrList).items.filter(`Location eq '${selectedLocation}'`).select('Title', 'Id').get().then((Response: any[]) => {
+    await sp.web.lists.getByTitle(TrList).items.filter(`Location eq '${selectedLocation}'`).select('Title', 'Id').top(2000).get().then((Response: any[]) => {
       console.log(Response);
       const { isEditMode } = this.state;
       const clientOptions = Response.map(item => ({
         label: item.Title,
         value: isEditMode ? item.Title : item.Id
-      }));
+      })).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));;
       this.setState({
         ClientNames: clientOptions,
         ClientName: slectedclient ?? ''
@@ -600,6 +628,7 @@ private handleinvoicenumber = (e:any) => {
         this.setState({ 
           Locations: locationOptions,
            SubmittedById: SubmittedById,
+           AvailableBalance:''
          // Initialize IsBulkVariablecheck to false
            });
     
@@ -617,7 +646,7 @@ private handleinvoicenumber = (e:any) => {
       });
       console.log('failed to fetch data');
     }finally{
-      hideLoader();
+      // hideLoader();
     }
 
   }
@@ -625,42 +654,42 @@ private handleinvoicenumber = (e:any) => {
   private handleClose = () => {
     this.setState({ showHideModal: false, Homeredirect: true, ItemID: 0, errorMessage: "" });
   }
-  private handleChange1 = async (event: any) => {
-    const selectedClientName = event.target.options[event.target.selectedIndex].text;
+  // private handleChange1 = async (event: any) => {
+  //   const selectedClientName = event.target.options[event.target.selectedIndex].text;
  
 
-    if (event.target.name === 'ClientName') {
+  //   if (event.target.name === 'ClientName') {
 
 
   
-      this.setState({             
-         InvoiceFor:'',
-         Invoicesfor:[],
-         TotalPOValue:'',
-         AvailableBalance:'',
+  //     this.setState({             
+  //        InvoiceFor:'',
+  //        Invoicesfor:[],
+  //        TotalPOValue:'',
+  //        AvailableBalance:'',
        
      
-        StartDate:'',
-        EndDate:'',
+  //       StartDate:'',
+  //       EndDate:'',
        
-        ClientName: selectedClientName
-      });
-        this.fetchclientidBasedOnClientName(selectedClientName);
-        this.fetchPONumberbasedonClientName(selectedClientName,'');
+  //       ClientName: selectedClientName
+  //     });
+  //       this.fetchclientidBasedOnClientName(selectedClientName);
+  //       this.fetchPONumberbasedonClientName(selectedClientName,'');
         
   
 
-    }
+  //   }
      
 
 
-  }
+  // }
 
      private fetchclientidBasedOnClientName = (selectedClientName: string) => {
       try{
         showLoader();
       const TrList = 'Clients';
-      sp.web.lists.getByTitle(TrList).items.select("ID", "Title").filter(`Title eq '${selectedClientName}'`).get().then((Response: any[]) => {
+      sp.web.lists.getByTitle(TrList).items.select("ID", "Title").filter(`Title eq '${selectedClientName}'`).top(2000).get().then((Response: any[]) => {
         console.log(Response);
         if (Response.length > 0) {
           this.setState({ ClientId: Response[0].ID });
@@ -725,36 +754,36 @@ private handleinvoicenumber = (e:any) => {
 //     }
 
 //   }
-    private handleDatefields = async (event: any) => {
-    let returnObj: any = {};
-    if (event.target.name === 'PONumber') {
-      // Reset all dropdowns to "None"
-      this.setState({
-       InvoiceFor:'',
-         Invoicesfor:[],
-         TotalPOValue:'',
-         AvailableBalance:'',
+  //   private handleDatefields = async (event: any) => {
+  //   let returnObj: any = {};
+  //   if (event.target.name === 'PONumber') {
+  //     // Reset all dropdowns to "None"
+  //     this.setState({
+  //      InvoiceFor:'',
+  //        Invoicesfor:[],
+  //        TotalPOValue:'',
+  //        AvailableBalance:'',
         
-      });
-    }
-    if (event.target.name != 'IsActive')
-      returnObj[event.target.name] = event.target.value;
-    else
-      returnObj[event.target.name] = event.target.checked;
-    this.setState(returnObj);
-    if (event.target.name === 'PONumber') {
-    await this.POdetailesidbasedonPOnumber(event.target.value)
-    await this.fetchInvoiceforsbasedonPONumber(event.target.value,'','','');
-       await this.Pohistory(event.target.value);
-    }
+  //     });
+  //   }
+  //   if (event.target.name != 'IsActive')
+  //     returnObj[event.target.name] = event.target.value;
+  //   else
+  //     returnObj[event.target.name] = event.target.checked;
+  //   this.setState(returnObj);
+  //   if (event.target.name === 'PONumber') {
+  //   await this.POdetailesidbasedonPOnumber(event.target.value)
+  //   await this.fetchInvoiceforsbasedonPONumber(event.target.value,'','','');
+  //      await this.Pohistory(event.target.value);
+  //   }
 
-  }
+  // }
 
   private fetchInvoiceforsbasedonPONumber=async(selectedponumber:any,selectedtotalpo:any,selectedavailablepo:any,invoicefor:any)=>{
      try{
       showLoader();
      const POList='PODetails';
-      await sp.web.lists.getByTitle(POList).items.select("Id", "POCategory","POValue").filter(`PONumber eq '${selectedponumber}' and ProposalFor eq '${this.state.Location}'`).get().then((Response: any[])=>{
+      await sp.web.lists.getByTitle(POList).items.select("Id", "POCategory","POValue").filter(`PONumber eq '${selectedponumber}' and ProposalFor eq '${this.state.Location}'`).top(2000).get().then((Response: any[])=>{
             //const { isEditMode } = this.state;
       //     const InvoicesforOptions = Response.map(item => ({
       //   label: item.POCategory,
@@ -764,7 +793,7 @@ private handleinvoicenumber = (e:any) => {
       this.setState({
         InvoiceFor:isEditMode?invoicefor: Response[0].POCategory,
         TotalPOValue:isEditMode?selectedtotalpo:Response[0].POValue,
-        AvailableBalance:isEditMode?selectedavailablepo:Response[0].POValue
+        AvailableBalance:isEditMode?selectedavailablepo:Response[0]?.POValue
         // AvailableBalance:isEditMode?selectedavailablepo: this.state.AvailableBalance ? this.state.AvailableBalance : Response[0].POValue
                  
       });
@@ -782,7 +811,7 @@ private handleinvoicenumber = (e:any) => {
    private Pohistory = async (PONumber: any) => {
     try{
       showLoader();
-   await sp.web.lists.getByTitle('Invoices').items.expand('SubmittedBy').select('SubmittedBy/Title,*').filter(`ProposalID eq '${PONumber}'`).get().then((Response: any[]) => {
+   await sp.web.lists.getByTitle('Invoices').items.expand('SubmittedBy').select('SubmittedBy/Title,*').filter(`ProposalID eq '${PONumber}'`).top(2000).get().then((Response: any[]) => {
       console.log(Response);
 
       if (Response.length > 0) {
@@ -818,7 +847,7 @@ private handleinvoicenumber = (e:any) => {
       showLoader();
      const ProposalList = 'PODetails';
     await sp.web.lists.getByTitle(ProposalList).items.select("Id", "PONumber")
-      .filter(`ClientName eq '${selectedClientName}'`).get().then((Response: any[]) => {
+      .filter(`ClientName eq '${selectedClientName}'`).top(2000).get().then((Response: any[]) => {
         console.log(Response);
        const { isEditMode } = this.state;
        
@@ -842,17 +871,82 @@ private handleinvoicenumber = (e:any) => {
       hideLoader();
     }
   }
+ private handleChangeClient = async (event: any, actionMeta?: any) => {
+    let returnObj: any = {};
+    let name: string | undefined;
+    let value: any;
+      let label: string | undefined;
+       
+    if (event && event.target) {
+        name = event.target.name;
+        value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+    } else if (actionMeta && actionMeta.name) {
+        name = actionMeta.name;
+        value = actionMeta.action === 'clear' ? '' : event?.value;
+        label = actionMeta.action === 'clear' ? '' : event?.label;
+    }
 
+    if (name !== undefined) {
+        returnObj[name] = value;
+        this.setState(returnObj);
+        if (name === 'ClientName' && label !== undefined) {
+        this.fetchclientidBasedOnClientName(label);
+        this.fetchPONumberbasedonClientName(label,'');
+        }
+         this.setState({            
+         PONumber: '',
+         PONumbers: [],
+         History:[],
+         InvoiceFor:'',
+         Invoicesfor:[],
+         TotalPOValue:'',
+         AvailableBalance:'',
 
+      });
+
+    }
+};
+ private handleChangePONumber = async (event: any, actionMeta?: any) => {
+    let returnObj: any = {};
+    let name: string | undefined;
+    let value: any;
+      let label: string | undefined;
+       
+    if (event && event.target) {
+        name = event.target.name;
+        value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+    } else if (actionMeta && actionMeta.name) {
+        name = actionMeta.name;
+        value = actionMeta.action === 'clear' ? '' : event?.value;
+        label = actionMeta.action === 'clear' ? '' : event?.label;
+    }
+
+    if (name !== undefined) {
+        returnObj[name] = value;
+        this.setState(returnObj);
+      
+
+        if (name === 'PONumber' && label !== undefined) {
+          await this.POdetailesidbasedonPOnumber(value)
+         await this.fetchInvoiceforsbasedonPONumber(value,'','','');
+          await this.Pohistory(value);
+        }
+
+    }
+};
   private BindComments = () => {
+     const formatWithCommas = (num: any) => {
+    if (num === null || num === undefined || num === '') return '';
+    return Number(num).toLocaleString('en-IN'); // 'en-IN' → Indian format (10,000)
+  };
     let rows = (this.state.History || []).map((item:any, index) => {
       return (
         <tr key={index}>
           <td>{index + 1}</td>
           <td>{item.InvoiceNumber}</td>
           <td>{DateUtilities.getDateMMDDYYYY(item.SubmittedDate)}</td>
-          <td>{this.state.currencySymbols}&nbsp;{item.AvailableBalance}</td>
-          <td>{this.state.currencySymbols}&nbsp;{item.InvoiceAmount}</td>
+          <td>{this.state.currencySymbols}&nbsp;{formatWithCommas(item.AvailableBalance)}</td>
+          <td>{this.state.currencySymbols}&nbsp;{formatWithCommas(item.InvoiceAmount)}</td>
           <td>{item.SubmittedBy?.Title || ''}</td>
           <td>{item.PaymentStatus}</td>
         </tr>
@@ -924,16 +1018,22 @@ private handleinvoicenumber = (e:any) => {
           // Fetch user locations from the billing team
           userLoc = Array.from(new Set(billingData.map(b => b.Location)));
           userClients = masterClientData.filter(c => userLoc.includes(c.Location));
-          if(userLoc.length === 0)
-          {
-            this.setState({isUnAuthorized:true});
-          }
+               if (userLoc.length === 0) {
+          this.setState({ islocationconfigured: false });
+        }
+          // if(userLoc.length === 0)
+          // {
+          //   this.setState({isUnAuthorized:true});
+          // }
         } else if (isSales) {
           const userEmail = currentUser.Email;
           userClients = masterClientData.filter(c =>
             c.SalesPerson.includes(userEmail)
           );
-          userLoc = Array.from(new Set(userClients.map(c => c.Location))); ;
+          userLoc = Array.from(new Set(userClients.map(c => c.Location)));
+           if (userLoc.length === 0) {
+          this.setState({ islocationconfigured: false });
+        }
         }
     
         this.setState({
@@ -946,6 +1046,15 @@ private handleinvoicenumber = (e:any) => {
         });
           if(userLoc.length === 1){
             this.fetchClientsBasedOnLocation(userLoc[0],'');
+              let currencySymbol = '';
+                   if (userLoc[0] === 'AUS') {
+                       currencySymbol = 'AU$';
+                      } else if (userLoc[0] === 'GDC') {
+                      currencySymbol = '₹';
+                     } else if (userLoc[0] === 'Onsite') {
+                      currencySymbol = '$';
+                 }
+                  this.setState({ currencySymbols: currencySymbol});
           }
       
         } catch (error) {
@@ -966,23 +1075,55 @@ private handleinvoicenumber = (e:any) => {
       }
 
   handleNumericChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const rawValue = e.target.value.replace(/,/g, "");
+    // const value = e.target.value;
+         const regex = /^\d{0,10}(\.\d{0,2})?$/;
+    // Allow only digits
+    if (regex.test(rawValue)) {
+      this.setState({ InvoicedAmount: rawValue });
+    }
+  };
+  
+
+
+formatWithCommasInvoiced = (value: string | number): string => {
+  if (value === null || value === undefined || value === '') return '';
+
+  const strValue = value.toString();
+
+  // If user is still typing a decimal (e.g., "123." or "123.4") → don’t format yet
+  if (strValue.endsWith('.') || strValue.match(/\.\d{0,1}$/)) {
+    return strValue;
+  }
+
+  const num = parseFloat(strValue);
+  if (isNaN(num)) return strValue;
+
+  return Number.isInteger(num)
+    ? num.toLocaleString('en-IN')
+    : num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+};
+
+
+
+
+     handleNumericChangeAvailable = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
          const regex = /^\d{0,10}(\.\d{0,2})?$/;
     // Allow only digits
     if (regex.test(value)) {
-      this.setState({ InvoicedAmount: value });
+      this.setState({ AvailableBalance: value });
     }
   };
-
   private configurationValidtion = () => {
     var navBar = document.getElementsByClassName("sidebar");
     var hamburgericon=document.getElementsByClassName("click-nav-icon");
     hamburgericon[0]?.classList.add("d-none");
     navBar[0]?.classList.add("d-none");
     return (
-      <div className='noConfiguration'>
+      <div className='noConfiguration w-100'>
         <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
-        <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+        <b>You are not configured in Masters.</b>Please contact Administrator.
       </div>
     );
   }
@@ -1043,7 +1184,7 @@ private handleinvoicenumber = (e:any) => {
               <div className="row pt-2 px-2">
                 <div className="col-md-3">
                   <div className="light-text">
-                    <label className="z-in-9">Location <span className="mandatoryhastrick">*</span></label>
+                    <label className="">Location <span className="mandatoryhastrick">*</span></label>
                     <select className="form-control" id='ddllocation' required={true} name="Location" value={this.state.Location} onChange={this.handleChange} disabled={this.state.isEditMode || this.state.Locations.length === 1} title="Location" itemRef='Location' ref={this.inputLocation}>
                       <option value=''>None</option>
                       {this.state.Locations.map((location: any, index: any) => (
@@ -1056,13 +1197,18 @@ private handleinvoicenumber = (e:any) => {
                 <div className="col-md-3">
                   <div className="light-text">
                     <label >Client Name<span className="mandatoryhastrick">*</span></label>
-                    <select className="form-control" disabled={this.state.isEditMode} required={true} name="ClientName" id="clientName" value={this.state.ClientName} title="Client Name" onChange={this.handleChange1} itemRef='ClientName' ref={this.inputClientName}>
+                    {/* <select className="form-control" disabled={this.state.isEditMode} required={true} name="ClientName" id="clientName" value={this.state.ClientName} title="Client Name" onChange={this.handleChange1} itemRef='ClientName' ref={this.inputClientName}>
                       <option value=''>None</option>
                       {this.state.ClientNames.map((Clientname: any, index: any) => (
                         <option key={index} value={Clientname.label}>{Clientname.label}</option>
                       ))}
 
-                    </select>
+                    </select> */}
+                       <div className="custom-dropdown">
+                                                <SearchableDropdown label="Client Name" Title="ClientName" name="ClientName" id="Client" placeholderText="None" disabled={this.state.isEditMode} className="" selectedValue={this.state.ClientName} optionLabel={'label'} optionValue={'label'} OptionsList={this.state.ClientNames} onChange={(selectedOption:any, actionMeta:any) => { this.handleChangeClient(selectedOption, actionMeta) }} isRequired={true} refElement={this.inputClientName} noOptionsMessage="None"></SearchableDropdown>
+                           
+                          </div>
+
                   </div>
                 </div>
 
@@ -1070,15 +1216,18 @@ private handleinvoicenumber = (e:any) => {
                   <div className="light-text">
                     <label >PO Number<span className="mandatoryhastrick">*</span></label>
                    
-                      <select className="form-control" required={true} name="PONumber" value={this.state.PONumber} disabled={this.state.isEditMode} onChange={this.handleDatefields} title="PONumber" itemRef='PONUmber' ref={this.inputPonumber}>
+                      {/* <select className="form-control" required={true} name="PONumber" value={this.state.PONumber} disabled={this.state.isEditMode} onChange={this.handleDatefields} title="PONumber" itemRef='PONUmber' ref={this.inputPonumber}>
                         <option value=''>None</option>
                         {this.state.PONumbers.map((POnumber: any, index: any) => (
                           <option key={index} value={POnumber.label}>{POnumber.label}</option>
                         ))}
 
-                      </select>
-
-                
+                      </select> */}
+                         <div className="custom-dropdown">
+                                                <SearchableDropdown label="PO Number" Title="PONumber" name="PONumber" id="PONumber" placeholderText="None" disabled={this.state.isEditMode} className="" selectedValue={this.state.PONumber} optionLabel={'label'} optionValue={'label'} OptionsList={this.state.PONumbers} onChange={(selectedOption:any, actionMeta:any) => { this.handleChangePONumber(selectedOption, actionMeta) }} isRequired={true} refElement={this.inputClientName} noOptionsMessage="None"></SearchableDropdown>
+                           
+                          </div>
+                  
                   </div>
                 </div>
                     
@@ -1112,10 +1261,22 @@ private handleinvoicenumber = (e:any) => {
                       type='text'
                       label={`Available Balance ${this.state.currencySymbols ? ` (${this.state.currencySymbols})` : ''}`}
                       name={"AvailableBalance"}
-                      value={this.state.AvailableBalance}
+                     value={this.state.AvailableBalance === 0 ? '0' : (this.state.AvailableBalance !== null && this.state.AvailableBalance !== undefined
+    ? (this.state.AvailableBalance % 1 === 0
+        ? this.state.AvailableBalance // whole number, no decimal
+        : this.state.AvailableBalance.toFixed(2)) // decimal with 2 places
+    : 0)}
+                      // value={
+                      //      this.state.AvailableBalance !== null && this.state.AvailableBalance !== undefined
+                      //       ? Number(this.state.AvailableBalance % 1 === 0
+                      //       ? this.state.AvailableBalance
+                      //       : this.state.AvailableBalance)
+                      //        : 0
+                      //      }
+                      // value={this.state.AvailableBalance?(this.state.AvailableBalance).toFixed(2):''}
                       disabled={true}
                       isRequired={true}
-                      onChange={this.handleCRtitle}
+                      onChange={this.handleNumericChangeAvailable}
                       refElement={this.inputAvailableBalance} onBlur={undefined}
                     />
                   </div>
@@ -1125,7 +1286,7 @@ private handleinvoicenumber = (e:any) => {
                       InpuId='txtInvoicedAmount'
                       label={`Invoiced Amount ${this.state.currencySymbols ? ` (${this.state.currencySymbols})` : ''}`}
                       name={"Invoiced Amount"}
-                      value={this.state.InvoicedAmount}
+                      value={this.formatWithCommasInvoiced(this.state.InvoicedAmount)}
                       disabled={this.state.isEditMode && this.state.Receivedflag=='Received'}
                       isRequired={true}
                       onChange={this.handleNumericChange}
@@ -1144,7 +1305,7 @@ private handleinvoicenumber = (e:any) => {
                       refElement={this.inputInvoiceNumber} onBlur={undefined}
                     />
                   </div>                       
-                                 <div className="col-md-3 my-2">
+                                 <div className="col-md-3">
                                             <div className="light-text c-people-picker">
                                              <label className='lblPeoplepicker'>Submitted By <span className="mandatoryhastrick">*</span></label>
                                               <div className="" id="divPeopleUser">
@@ -1164,15 +1325,15 @@ private handleinvoicenumber = (e:any) => {
                                               </div>
                                             </div>
                                           </div>
-                                      <div className="col-md-3 my-2">
+                                      <div className="col-md-3">
                     <div className="light-text div-readonly">
-                      <label className="z-in-9">Invoiced Date<span className="mandatoryhastrick">*</span></label>
+                      <label className="">Invoiced Date<span className="mandatoryhastrick">*</span></label>
                       <div className="custom-datepicker" id="DivInvoicedDate">
                         <DatePicker onDatechange={(date: any)=>this.handleDateChange(date,'InvoicedDate')} name={"Invoiced Date"}  ref={this.InvoicedDate} isDisabled={this.state.isEditMode && this.state.Receivedflag=='Received'} placeholder="MM/DD/YYYY" endDate={new Date()} selectedDate={this.state.InvoicedDate} maxDate={new Date()} id={'txtInvoicedDate'} title={"Invoiced Date"} />
                       </div>
                     </div>
                   </div>
-                       <div className="col-md-3 my-2">
+                       <div className="col-md-3">
                         <div className="light-text">
                         <label >Invoice Status<span className="mandatoryhastrick">*</span></label>
                         <select className="form-control" required={true}  name="InvoiceStatus"  value={this.state.InvoiceStatus} onChange={this.handleProjectstatus} disabled={this.state.isEditMode && this.state.Receivedflag=='Received'}  title="InvoiceStatus" itemRef='InvoiceStatus' ref={this.inputInvoiceStatus}>
@@ -1184,11 +1345,11 @@ private handleinvoicenumber = (e:any) => {
                     
                         </div>
                     </div>
-                     <div className="col-md-3 my-2">
+                     <div className="col-md-3">
                     <div className="light-text div-readonly">
-                      <label className="z-in-9">Payment Date {this.state.InvoiceStatus=='Received' &&(<span className="mandatoryhastrick">*</span>)}</label>
+                      <label className="">Payment Date {this.state.InvoiceStatus=='Received' &&(<span className="mandatoryhastrick">*</span>)}</label>
                       <div className="custom-datepicker" id="DivPaymentDate">
-                        <DatePicker onDatechange={(date: any)=>this.handleDateChange(date,'PaymentDate')} name={"PaymentDate"}   ref={this.inputPaymentDate} placeholder="MM/DD/YYYY" endDate={new Date()} selectedDate={this.state.PaymentDate} disabled={this.state.isEditMode && this.state.Receivedflag=='Received'} readonly={this.state.isEditMode && this.state.Receivedflag=='Received'} maxDate={new Date()} id={'txtPaymentDate'} title={"Payment Date"} />
+                        <DatePicker onDatechange={(date: any)=>this.handleDateChange(date,'PaymentDate')} name={"PaymentDate"}   ref={this.inputPaymentDate} placeholder="MM/DD/YYYY" endDate={new Date()} selectedDate={this.state.PaymentDate} isDisabled={this.state.isEditMode && this.state.Receivedflag=='Received'} readonly={this.state.isEditMode && this.state.Receivedflag=='Received'} maxDate={new Date()} id={'txtPaymentDate'} title={"Payment Date"} />
                       </div>
                     </div>
                   </div>

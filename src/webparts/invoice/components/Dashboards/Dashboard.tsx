@@ -30,7 +30,9 @@ export interface IDashboardState {
   loading: boolean;
   isDev: boolean;
   islocationconfigured: boolean;
-  isAuthorized: boolean
+  isAuthorized: boolean;
+  isSalesonly:boolean;
+
 }
 
 class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
@@ -52,7 +54,8 @@ class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
       SelectedPoValue: null,
       isDev: false,
        islocationconfigured:true,
-       isAuthorized:false            // Assuming you want to track if the user is part of the Dev Team
+       isAuthorized:false,
+        isSalesonly: false,            // Assuming you want to track if the user is part of the Dev Team
     };
   }
 
@@ -73,6 +76,7 @@ class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
       const isSales = userGroups.some(g => g.Title === 'Sales Team');
       const isDev = userGroups.some(g => g.Title === 'Dev Team');
       const isAuthorized =isAdmin || isBilling || isSales || isDev;
+       const isOnlySales = isSales && !isAdmin && !isBilling && !isDev;
         this.setState({ isAuthorized,loading: false });  
         if(!isAuthorized){
           return;
@@ -147,11 +151,15 @@ class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
           c.SalesPerson.includes(userEmail)
         );
         userLoc = Array.from(new Set(userClients.map(c => c.Location)));;
+        if (userLoc.length === 0) {
+          this.setState({ islocationconfigured: false });
+        }
       }
        const sortedLocations = userLoc.sort((a, b) => a.localeCompare(b));
       this.setState({
         Locations: userLoc.map(item => ({ Title: item })),
         selectedLocation: userLoc.length > 0 ? userLoc[0] :sortedLocations[0] || '',
+        isSalesonly: isOnlySales
 
       });
 
@@ -162,38 +170,124 @@ class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
     }
   }
 
-  private loadLocationsAndClients = async () => {
-    try {
-      const [clients, pomaster, invoicesdata] = await Promise.all([
-        sp.web.lists.getByTitle('Clients').items.getAll(),
-        sp.web.lists.getByTitle('PODetails').items.select('ClientName').filter(`Status eq 'In-Progress'`).getAll(),
-        sp.web.lists.getByTitle('Invoices').items.getAll()
-      ]);
 
-      const activeClientNames = new Set(pomaster.map(po => po.ClientName));
-      const filteredClients = clients.filter(client => activeClientNames.has(client.Title));
+private loadLocationsAndClients = async () => {
+  try {
+    showLoader();
 
-      //  const defaultLocation = locations.length > 0 ? locations[0].Title : '';
-      this.setState({ Clients: filteredClients, Pomaster: pomaster, Invoicetabledata: invoicesdata });
+    const currentUser = await sp.web.currentUser.get();
+    const userEmail = (currentUser?.Email || '').toLowerCase();
 
-    } catch (error) {
-      console.log('Error loading data:', error);
+    // fetch clients including Location and sales fields
+    const [clients, poMaster, invoicesdata] = await Promise.all([
+      sp.web.lists.getByTitle('Clients').items
+        .select(
+          "Id",
+          "Title",
+          "Location",
+          "Sales_x0020_Person_x0020_Name/EMail",
+          "Alternate_x0020_Sales_x0020_Pers/EMail"
+        )
+        .expand("Sales_x0020_Person_x0020_Name", "Alternate_x0020_Sales_x0020_Pers")
+        .getAll(),
+
+      sp.web.lists.getByTitle('PODetails').items
+        .select('ClientName', 'Status', 'ClientID', 'PONumber','ProposalFor','POValue','Created')
+        .getAll(),
+
+      sp.web.lists.getByTitle('Invoices').items.getAll()
+    ]);
+
+    console.log("loadLocationsAndClients: fetched clients:", clients.length);
+    console.log("loadLocationsAndClients: fetched PO records:", poMaster.length);
+    
+    // active clients from POs with Status === 'In-Progress'
+    const activePOs = poMaster.filter(po => (po.Status || '').toString() === 'In-Progress');
+    const activeClientNames = new Set(activePOs.map(po => po.ClientName).filter(Boolean));
+
+    // Normalize clients to ensure Location exists
+    const normalizedClients = clients.map((c: any) => ({
+      ...c,
+      Location: c.Location || ''
+    }));
+
+    // Helper to get all sales emails for a client (lowercased)
+    const getClientSalesEmails = (client: any) => {
+      const salesField = client.Sales_x0020_Person_x0020_Name;
+      const altField = client.Alternate_x0020_Sales_x0020_Pers;
+
+      const salesEmails = Array.isArray(salesField)
+        ? salesField.map((p: any) => (p?.EMail || '').toLowerCase())
+        : salesField && salesField.EMail ? [salesField.EMail.toLowerCase()] : [];
+
+      const altEmails = Array.isArray(altField)
+        ? altField.map((p: any) => (p?.EMail || '').toLowerCase())
+        : altField && altField.EMail ? [altField.EMail.toLowerCase()] : [];
+
+      return Array.from(new Set([...salesEmails, ...altEmails].filter(Boolean)));
+    };
+
+    let resultClients: any[] = [];
+
+    if (this.state.isSalesonly) {
+      // Clients assigned to this sales user
+      const salesAssigned = normalizedClients.filter(c => {
+        const emails = getClientSalesEmails(c);
+        return emails.includes(userEmail);
+      });
+
+      console.log("Sales-assigned clients count:", salesAssigned.length);
+
+      if (activeClientNames.size > 0) {
+        // If there are active clients, prefer intersection of salesAssigned & active
+        const salesActiveIntersection = salesAssigned.filter(c => activeClientNames.has(c.Title));
+        // If intersection is empty but salesAssigned exists, show salesAssigned (so sales user can always see their clients)
+        resultClients = salesActiveIntersection.length > 0 ? salesActiveIntersection : salesAssigned;
+      } else {
+        // No active POs - show salesAssigned clients
+        resultClients = salesAssigned;
+      }
+    } else {
+      // Non-sales users: show active clients if any, otherwise all clients
+      if (activeClientNames.size > 0) {
+        resultClients = normalizedClients.filter(c => activeClientNames.has(c.Title));
+      } else {
+        resultClients = normalizedClients.slice();
+      }
     }
-  };
+
+    console.log("Final clients to set in state:", resultClients.length);
+
+    this.setState({
+      Clients: resultClients,
+      Pomaster: poMaster,
+      Invoicetabledata: invoicesdata
+    });
+
+  } catch (error) {
+    console.error('Error loading data:', error);
+  } finally {
+    hideLoader();
+  }
+};
 
   private onClientClick = async (clientId: number) => {
     if (this.state.openClientId === clientId) {
       this.setState({ openClientId: null, POlist: [], openProposalIds: [] });
     } else {
       try {
-        const invoices = await sp.web.lists
-          .getByTitle('PODetails')
-          .items.filter(`ClientID eq '${clientId}' and Status eq 'In-Progress'`)
-          .getAll();
+       const poListForClient = this.state.Pomaster
+    .filter(po => String(po.ClientID) === String(clientId) && po.Status === 'In-Progress')
+      .sort((a, b) => {
+    const dateA = a.Created ? new Date(a.Created).getTime() : 0;
+    const dateB = b.Created ? new Date(b.Created).getTime() : 0;
+    return dateB - dateA; // Latest first
+  });
+console.log(poListForClient.map(p => ({ PONumber: p.PONumber, Created: new Date(p.Created).toISOString() })));
 
         this.setState({
           openClientId: clientId,
-          POlist: invoices,
+          POlist: poListForClient,
           openProposalIds: [],
         });
       } catch (err) {
@@ -202,16 +296,28 @@ class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
     }
   };
 
+  getCurrencySymbol(proposalFor: string){
+    switch(proposalFor){
+      case "AUS": return "AU$";
+      case "GDC":return "₹";
+      case "Onsite" :return "$";
+      default:
+        return "";
+    }
+  }
+
   private renderInvoiceTable = (data: any[]) => {
+  const {selectedLocation}=this.state;
+  const currencysymbol = this.getCurrencySymbol(selectedLocation);
     const columns = [
       {
-        name: 'AU$ Invoiced Amount',
-        selector: (row: any) => `AU$ ${row.InvoiceAmount ?? 0}`,
+        name: `${currencysymbol} Invoiced Amount`,
+        selector: (row: any) => `${currencysymbol} ${row.InvoiceAmount ?? 0}`,
         sortable: true,
       },
       {
-        name: 'AU$ Balance',
-        selector: (row: any) => `AU$ ${row.AvailableBalance ?? 0}`,
+        name: `${currencysymbol} Balance`,
+        selector: (row: any) => `${currencysymbol} ${row.AvailableBalance ?? 0}`,
         sortable: true,
       },
       {
@@ -225,21 +331,6 @@ class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
         sortable: true,
       },
     ];
-    //        const customStyles = {
-    //   headCells: {
-    //     style: {
-    //       backgroundColor: '#eee',
-    //       color: '#572ba7',
-    //       fontWeight: 'bold',
-    //     },
-    //   },
-    //   rows: {
-    //     style: {
-    //       fontSize: '14px',
-    //       minHeight: '48px',
-    //     },
-    //   },
-    // };
     return (
       <TableGenerator columns={columns} data={data} fileName={'Invoices'} ></TableGenerator>
     )
@@ -313,9 +404,9 @@ class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
     hamburgericon[0]?.classList.add("d-none");
     navBar[0]?.classList.add("d-none");
     return (
-      <div className='noConfiguration'>
+      <div className='noConfiguration w-100'>
         <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
-        <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+        <b>You are not configured in Masters.</b>Please contact Administrator.
       </div>
     );
   }
@@ -335,7 +426,7 @@ class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
 
     const filteredClients = Clients.filter(
       (client) => client.Location === selectedLocation
-    );
+    ).sort((a, b) => a.Title.localeCompare(b.Title));
 
     const groupedInvoices: { [key: string]: any[] } = {};
     POlist.forEach((POlist) => {
@@ -400,7 +491,7 @@ class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
             <div className="col-md-4"> */}
 
               <div className="light-text" style={{marginLeft: '7px'}}>
-                <ul className="nav nav-pills c-tab-pills">
+                <ul className="nav nav-pills c-tab-pills dashboard-tab">
 
                   {Locations.length === 1 ? (
                     <li className="nav-item" key={Locations[0].Title}>
@@ -465,7 +556,11 @@ class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
                             {Object.keys(groupedInvoices).length === 0 ? (
                               <p>No Proposal IDs found.</p>
                             ) : (
-                              Object.keys(groupedInvoices).map((pid) => (
+                              Object.keys(groupedInvoices)  .sort((a, b) => {
+    const dateA = groupedInvoices[a][0].Created ? new Date(groupedInvoices[a][0].Created).getTime() : 0;
+    const dateB = groupedInvoices[b][0].Created ? new Date(groupedInvoices[b][0].Created).getTime() : 0;
+    return dateB - dateA; // Latest first
+  }).map((pid) => (
                                 <div key={pid} className="nested-accordion mt-0 mb-2">
                                   <div
                                     className="nested-header"
@@ -522,6 +617,7 @@ class Dashboard extends React.Component<IDashboardProps, IDashboardState> {
                                             <div className='col-md-5'>
                                               <div className='table-outer'>
                                                 <div className='t-title'>PO Details</div>
+                                           
                                                  <Chart
                                                 chartType="PieChart"
                                                 data={pieData}

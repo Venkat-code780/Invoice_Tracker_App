@@ -12,6 +12,7 @@ import { showToast } from '../Utilities/toastHelper';
 import { hideLoader, showLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component';
 import Icons from '../../assets/Icons';
+import SearchableDropdown from '../Shared/Searchbledropdown';
 // import DateUtilities from '../Utilities/Dateutilities';
 
 
@@ -31,6 +32,11 @@ export interface IProjectstatusProps {
   context: any;
   history: any;
 }
+interface ProjectStatusHistory {
+  Project: string;
+  PoNumber: string;
+  "Created On": string;
+}
 export interface IProjectstatusState {
 
 }
@@ -45,6 +51,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
     modalTitle: '',
     isSuccess: false,
     ischecked: false,
+    History: [] as ProjectStatusHistory[],
     showHideModal: false,
     errorMessage: '',
     POId:0,
@@ -78,6 +85,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
     ItemID: 0,
       unauthorized: false,
       islocationconfigured:true,
+          isSalesonly: false,
   };
   private inputLocation: React.RefObject<HTMLSelectElement>;
   inputClientName: React.RefObject<HTMLSelectElement>;
@@ -121,7 +129,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
         ItemID:ItemID
       });
       await this.getOnclickdata(ItemID);
-      document.getElementById('ddProjectStatus')?.focus();
+      document.getElementById('txtStartDate')?.focus();
       
       
     }
@@ -145,6 +153,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
       'ExecutionType',
       'StartDate',
        'EndDate',
+       'History',
        'ProjectStatus',
        'Sprints',
        'CRTitle',
@@ -155,7 +164,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
 
 
       'Id').get().then((Response) => {
-       console.log(Response);
+         const historyData = JSON.parse(Response.History);
         this.setState({
 
           addNewProgram: true,
@@ -163,6 +172,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
           ClientName: Response.ClientName,
            ProjectName : Response.Title,
           PONumber: Response.PONumber,
+          History: historyData,
           ExecutionType:Response.ExecutionType,
           StartDate:Response.StartDate,
           EndDate:Response.EndDate,
@@ -179,8 +189,9 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
           ClientId:Response.ClientID
 
         })
-  
-        this.fetchClientsBasedOnLocation(Response.ProposalFor, Response.ClientName);
+                     this.state.isSalesonly?this.fetchClientNames(): this.fetchClientsBasedOnLocation(Response.ProposalFor, Response.ClientName);
+
+        // this.fetchClientsBasedOnLocation(Response.ProposalFor, Response.ClientName);
          this.fetchProjetsbasedonClientName(Response.ClientName,Response.Title);
          this.fetchPONumbersbasedonProject(Response.Title,Response.PONumber);
            this.fetchDatesbasedonPONumber(Response.PONumber,Response.StartDate,Response.EndDate);
@@ -190,6 +201,21 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
 
       })
   }
+       fetchClientNames() {
+        sp.web.lists.getByTitle('Clients').items
+          .select('Id', 'Title') // Select ID and Title for the Clients list
+          .get()
+          .then((response) => {
+            // Map the Clients list to the format { value: ID, label: Title }
+            const ClientNames = response.map(client => ({
+              value: this.state.isEditMode ? client.Title : client.Id,
+              label: client.Title
+            }));
+    
+            // Set the ClientNames state for the dropdown options
+            this.setState({ ClientNames });
+          });
+      }
 
   handleDateChange = (date: any,fieldName:string) => {
     const newDate = date[0];
@@ -260,7 +286,90 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
   }
 
 
+  private handleChangeClient = async (event: any, actionMeta?: any) => {
+    let returnObj: any = {};
+    let name: string | undefined;
+    let value: any;
+      let label: string | undefined;
+       
+    if (event && event.target) {
+        name = event.target.name;
+        value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+    } else if (actionMeta && actionMeta.name) {
+        name = actionMeta.name;
+        value = actionMeta.action === 'clear' ? '' : event?.value;
+        label = actionMeta.action === 'clear' ? '' : event?.label;
+    }
 
+    if (name !== undefined) {
+        returnObj[name] = value;
+        this.setState(returnObj);
+      
+
+        if (name === 'ClientName' && label !== undefined) {
+             this.fetchProjetsbasedonClientName(label,'');
+        this.fetchclientidBasedOnClientName(label);
+        }
+        this.setState({clientNameLabel:label,StartDate:null,EndDate:null, PONumber: '', PONumers: [],ProposalFor:'',ProjectName:'',TitleoftheProposal:'',ProjectNames:[],TitleOfProposals:[], EstimationHours: '' });
+    }
+};
+
+ private handleChangePONumber = async (event: any, actionMeta?: any) => {
+    let returnObj: any = {};
+    let name: string | undefined;
+    let value: any;
+      let label: string | undefined;
+       
+    if (event && event.target) {
+        name = event.target.name;
+        value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+    } else if (actionMeta && actionMeta.name) {
+        name = actionMeta.name;
+        value = actionMeta.action === 'clear' ? '' : event?.value;
+        label = actionMeta.action === 'clear' ? '' : event?.label;
+    }
+
+    if (name !== undefined) {
+        returnObj[name] = value;
+        this.setState(returnObj);
+      
+
+        if (name === 'ProjectName' && label !== undefined) {
+                this.fetchPONumbersbasedonProject(value,'');
+        }
+        this.setState({StartDate:null,EndDate:null });
+       
+    }
+};
+
+
+
+ private handleDatefields = async (event: any, actionMeta?: any) => {
+    let returnObj: any = {};
+    let name: string | undefined;
+    let value: any;
+      let label: string | undefined;
+       
+    if (event && event.target) {
+        name = event.target.name;
+        value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+    } else if (actionMeta && actionMeta.name) {
+        name = actionMeta.name;
+        value = actionMeta.action === 'clear' ? '' : event?.value;
+        label = actionMeta.action === 'clear' ? '' : event?.label;
+    }
+
+    if (name !== undefined) {
+        returnObj[name] = value;
+        this.setState(returnObj);
+      
+
+        if (name === 'PONumber' && label !== undefined) {
+             this.fetchDatesbasedonPONumber(value,'','');
+        }
+       this.setState({StartDate:null,EndDate:null });
+    }
+};
 
 
 
@@ -282,24 +391,24 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
 
   }
 
-  private SubmitData = () => {
+  private SubmitData = async () => {
      showLoader();
     let data:any={}
-    data.location= { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputLocation };
-    data.ClientName= { val: this.state.ClientName, required: true, Name: 'Client Name', Type: ControlType.string, Focusid: this.inputClientName };
-    data. ProjectName={val: this.state.ProjectName, required: true, Name: 'Project', Type: ControlType.string, Focusid: this.inputProjectName}
-    data.PONumber={val: this.state.PONumber, required: true, Name: 'PO Number', Type: ControlType.string, Focusid: this.inputPonumber}
-    data.ExecutionType={val: this.state.ExecutionType, required: true, Name:'Execution Type', Type: ControlType.string, Focusid: this.inputExecutionType}
+    data.location= { val: this.state.Location, required: true, Name: "'Location'", Type: ControlType.string, Focusid: this.inputLocation };
+    data.ClientName= { val: this.state.ClientName, required: true, Name: "'Client Name'", Type: ControlType.reactSelect, Focusid: 'Client' };
+    data. ProjectName={val: this.state.ProjectName, required: true, Name: "'Project'", Type: ControlType.reactSelect, Focusid: 'ProjectName'}
+    data.PONumber={val: this.state.PONumber, required: true, Name: "'PO Number'", Type: ControlType.reactSelect, Focusid:'PONumber'}
+    data.ExecutionType={val: this.state.ExecutionType, required: true, Name:"'Execution Type'", Type: ControlType.string, Focusid: this.inputExecutionType}
     if(this.state.ExecutionType==='CR')
      {
-       data.CRTitle={val: this.state.CRTitle, required: true, Name: 'CR Title', Type: ControlType.string, Focusid: this.inputCRTitle};
+       data.CRTitle={val: this.state.CRTitle, required: true, Name: "'CR Title'", Type: ControlType.string, Focusid: this.inputCRTitle};
      }
      else if(this.state.ExecutionType==='Sprint'){
-      (data).Sprints={val: this.state.NoofSprints, required: true, Name: 'No. of Sprints', Type: ControlType.string, Focusid: this.inputNoofSprints}
+      (data).Sprints={val: this.state.NoofSprints, required: true, Name: "'No. of Sprints'", Type: ControlType.string, Focusid: this.inputNoofSprints}
      }
-     data.StartDate={val: this.state.StartDate, required: true, Name: 'Start Date', Type: ControlType.date, Focusid:'DivStartDate'};
-     data.EndDate={val: this.state.EndDate, required: true, Name: 'End Date', Type: ControlType.date, Focusid:'DivEndDate'};
-     data.ProjectStatus={val: this.state.ProjectStatus, required: true, Name: 'Project Status', Type: ControlType.string, Focusid: this.inputProjectStatus}
+     data.StartDate={val: this.state.StartDate, required: true, Name: "'Start Date'", Type: ControlType.date, Focusid:'DivStartDate'};
+     data.EndDate={val: this.state.EndDate, required: true, Name: "'End Date'", Type: ControlType.date, Focusid:'DivEndDate'};
+     data.ProjectStatus={val: this.state.ProjectStatus, required: true, Name: "'Project Status'", Type: ControlType.string, Focusid: this.inputProjectStatus}
     
     let isValid = formValidation.checkValidations(data);
 
@@ -316,14 +425,17 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
        Remarks:this.state.Remarks,
        CRTitle:this.state.CRTitle,
        Sprints:this.state.NoofSprints?parseInt(this.state.NoofSprints):null,
-       ClientID:this.state.isEditMode?this.state.ClientId:this.state.ClientId.toString()
+       ClientID:this.state.isEditMode?this.state.ClientId:this.state.ClientId.toString(),
+       History: JSON.stringify(this.state.History)
       
     }
 
 
     if (isValid.status) {
              try{
-              this.checkDuplicates(formdata);
+              await this.checkDuplicates(formdata);
+                this.state.History.push({ "Project": formdata.Title, "PoNumber": formdata.PONumber, "Created On": new Date().toLocaleString('en-GB', { hour12: false }) })
+           formdata['History'] = JSON.stringify(this.state.History);
              }catch(e){
               console.log("Error in Submiting the data",e)
               this.onError();
@@ -339,7 +451,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
       // this.setState({ errorMessage: isValid.message });
 
   }
-  private checkDuplicates = async (formData: any) => {
+  private checkDuplicates =  (formData: any) => {
     let TrList = 'ProjectStatus';
     var filterString;
     try {
@@ -347,10 +459,12 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
         filterString = `PONumber eq '${formData.PONumber}'`;
       else
         filterString = `PONumber eq '${formData.PONumber}' and Id ne ${this.state.ItemID}`;
-        await sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
+         sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
         then( async (response: any[]) => {
           if (response.length > 0){
-            showToast('error','Duplicate record not accept')
+            showToast('error',"'PO Number' already exists");
+            hideLoader();
+            // showToast('error','Duplicate record not accept')
             // this.setState({ errorMessage: 'Duplicate record not accept' });
           }
           else
@@ -360,11 +474,62 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
     catch (e) {
       this.onError();
       console.log(e);
-    }finally{
-      hideLoader();
     }
     // return findduplicates
   }
+
+  private BindComments = () => {
+    let rows = this.state.History.map((item, index) => {
+      
+      return (
+        <tr key={index}>
+          <td>{index + 1}</td>
+          <td>{item.Project}</td>
+          <td>{item.PoNumber}</td>
+          <td>{this.formatDDMMYYYYToMMDDYYYY(item['Created On'])}</td>
+        </tr>
+      );
+    });
+    return rows;
+
+  }
+
+formatDDMMYYYYToMMDDYYYY(datetime: string): string {
+  if (!datetime) return "Invalid Date";
+
+  // Split into date and optional time
+  const [datePart, timePart] = datetime.includes(",")
+    ? datetime.split(", ")
+    : [datetime, null];
+
+  if (!datePart) return "Invalid Date";
+
+  const [part1, part2, year] = datePart.split("/");
+
+  if (!part1 || !part2 || !year) return "Invalid Date";
+
+  const d = parseInt(part1, 10);
+  const m = parseInt(part2, 10);
+  const y = parseInt(year, 10);
+
+  if (isNaN(d) || isNaN(m) || isNaN(y)) return "Invalid Date";
+
+  // Detect if input is already MM/DD/YYYY (month <= 12 and day <= 31)
+  const isAlreadyMMDDYYYY = m <= 31 && d <= 12;
+
+  let formattedDate: string;
+  if (isAlreadyMMDDYYYY) {
+    // Keep as-is
+    formattedDate = `${part1}/${part2}/${year}`;
+  } else {
+    // Convert DD/MM/YYYY → MM/DD/YYYY
+    formattedDate = `${m}/${d}/${y}`;
+  }
+
+  return timePart ? `${formattedDate}, ${timePart}` : formattedDate;
+}
+
+
   private insertorupdateListitem =async (formData: any) => {
     this.setState({ loading: true });
     let PODetails={
@@ -377,7 +542,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
         let promises = [
               sp.web.lists.getByTitle('ProjectStatus').items.add(formData)
           ] ;
-          if (this.state.POId !== 0) {
+          if (this.state.POId !== 0 && this.state.ProjectStatus!=="In-Progress") {
            promises.push(
                      sp.web.lists.getByTitle('PODetails').items.getById(this.state.POId).update(PODetails)
                      );
@@ -395,7 +560,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
         let promises = [
              sp.web.lists.getByTitle('ProjectStatus').items.getById(this.state.ItemID).update(formData)
           ] ;
-          if (this.state.POId !== 0) {
+          if (this.state.POId !== 0 && this.state.ProjectStatus!=="In-Progress") {
            promises.push(
                      sp.web.lists.getByTitle('PODetails').items.getById(this.state.POId).update(PODetails)
                      );
@@ -413,7 +578,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
         console.log(e);
   
       }finally{
-        hideLoader();
+
       }
   }
   
@@ -428,6 +593,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
         const isSales = userGroups.some(g => g.Title === 'Sales Team');
         const isDev = userGroups.some(g => g.Title === 'Dev Team'); 
         const isAuthorized = isAdmin || isBilling || isSales || isDev;
+         const isOnlySales = isSales && !isAdmin && !isBilling && !isDev;
         if (!isAuthorized) {
           this.setState({
             unauthorized: true,
@@ -496,7 +662,10 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
         userClients = masterClientData.filter(c =>
           c.SalesPerson.includes(userEmail)
         );
-        userLoc = Array.from(new Set(userClients.map(c => c.Location))); ;
+        userLoc = Array.from(new Set(userClients.map(c => c.Location)));
+         if (userLoc.length === 0) {
+          this.setState({ islocationconfigured: false });
+        }
       }
   
       this.setState({
@@ -506,6 +675,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
                  })).filter(item => item.label !=='').sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })),
         loading: false,
         Location: userLoc.length === 1 ? userLoc[0] : '',
+           isSalesonly: isOnlySales
       });
         if(userLoc.length === 1){
           this.fetchClientsBasedOnLocation(userLoc[0],'');
@@ -513,6 +683,8 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
     
       } catch (error) {
         console.error('Error fetching user groups:', error);
+      }finally{
+        hideLoader();
       }
     }
   
@@ -524,13 +696,13 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
 
   private onSucess = () => {
         showToast('success', 'Project Status submitted successfully');
-         this.getEstimationsListData();
+        //  this.getEstimationsListData();
          this.setState({ showHideModal: false,Homeredirect:true,addNewProgram:false, loading: false, isSuccess: true, ItemID: 0,errorMessage: "" });
     // this.setState({ modalTitle: 'Success', modalText: 'Estimation submitted successfully', showHideModal: true, loading: false, isSuccess: true, ItemID: 0, errorMessage: "" });
   }
   private onUpdateSucess = () => {
      showToast('success', 'Project Status Updated successfully');
-                this.getEstimationsListData();
+                // this.getEstimationsListData();
             this.setState({ showHideModal: false,Homeredirect:true,addNewProgram:false, loading: false, isSuccess: true, ItemID: 0,errorMessage: "" });
     // this.setState({ modalTitle: 'Success', modalText: 'Estimation updated successfully', showHideModal: true, loading: false, isSuccess: true, ItemID: 0, errorMessage: "" });
   }
@@ -542,28 +714,73 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
   }
 
   
-  private fetchClientsBasedOnLocation = (selectedLocation: string, slectedclient: string) => {
+  // private fetchClientsBasedOnLocation = (selectedLocation: string, slectedclient: string) => {
+  //   try{
+  //     showLoader();
+  //   const TrList = 'Clients';
+  //   sp.web.lists.getByTitle(TrList).items.filter(`Location eq '${selectedLocation}'`).select('Title', 'Id').get().then((Response: any[]) => {
+  //     console.log(Response);
+  //     const { isEditMode } = this.state;
+  //     const clientOptions = Response.map(item => ({
+  //       label: item.Title,
+  //       value: isEditMode ? item.Title : item.Id
+  //     })).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));;
+  //     this.setState({
+  //       ClientNames: clientOptions,
+  //       ClientName: slectedclient ?? '' // Set the selected client name if provided
+
+  //     });
+  //   });
+  // }catch(e){
+  //   console.log('failed to fetch Clients based on location',e);
+  // }finally{
+  //   hideLoader();
+  // }
+  // }
+
+  private fetchClientsBasedOnLocation = async (selectedLocation: string, slectedclient: string) => {
+    try{
+      showLoader();
     const TrList = 'Clients';
-    sp.web.lists.getByTitle(TrList).items.filter(`Location eq '${selectedLocation}'`).select('Title', 'Id').get().then((Response: any[]) => {
-      console.log(Response);
-      const { isEditMode } = this.state;
-      const clientOptions = Response.map(item => ({
-        label: item.Title,
-        value: isEditMode ? item.Title : item.Id
-      }));
+    const { isEditMode } = this.state;
+         const currentUser = await sp.web.currentUser.get();
+        const userEmail = currentUser.Email;
+        let filterQuery = `Location eq '${selectedLocation}'`;
+        if (this.state.isSalesonly) {
+      // Check both SalesPerson and AlternateSalesPerson fields
+      filterQuery += ` and (Sales_x0020_Person_x0020_Name/EMail eq '${userEmail}' or Alternate_x0020_Sales_x0020_Pers/EMail eq '${userEmail}')`;
+    }
+
+ const response: any[] = await sp.web.lists
+      .getByTitle(TrList)
+      .items
+      .filter(filterQuery)
+      .select("Id", "Title", "Sales_x0020_Person_x0020_Name/EMail", "Alternate_x0020_Sales_x0020_Pers/EMail")
+      .expand("Sales_x0020_Person_x0020_Name", "Alternate_x0020_Sales_x0020_Pers").top(2000)
+      .get();
+       const clientOptions = response.map(item => ({
+      label: item.Title,
+      value: isEditMode ? item.Title : item.Id
+    })).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
       this.setState({
         ClientNames: clientOptions,
         ClientName: slectedclient ?? '' // Set the selected client name if provided
 
       });
-    });
+
+  }
+  catch(error){
+    console.log("Error in data" +error);
+  }finally{
+    hideLoader();
+  }
   }
 
 
   private getEstimationsListData = () => {
     let locationsList = 'Location';
     try {
-
+         showLoader();
       let SubmittedById = this.props.spContext.userId;  // Get the current user's ID
       // get all the items from a list
       sp.web.lists.getByTitle(locationsList).items.select('Title').get().then((Locations: any[]) => {
@@ -576,7 +793,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
            SubmittedById: SubmittedById,
          // Initialize IsBulkVariablecheck to false
            });
-           hideLoader();
+          //  hideLoader();
       }
       );
 
@@ -604,50 +821,50 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
   private handleClose = () => {
     this.setState({ showHideModal: false, Homeredirect: true, ItemID: 0, errorMessage: "" });
   }
-  private handleChange1 = (event: any) => {
-    const selectedClientName = event.target.options[event.target.selectedIndex].text;
+  // private handleChange1 = (event: any) => {
+  //   const selectedClientName = event.target.options[event.target.selectedIndex].text;
  
-    // let returnObj: Record<string, any> = {};
+  //   // let returnObj: Record<string, any> = {};
 
-    if (event.target.name === 'ClientName') {
+  //   if (event.target.name === 'ClientName') {
 
 
-      // Reset all dropdowns to "None"
-      this.setState({
-           // Reset Client dropdown                   
-         PONumber:'',
-         PONumbers:[],
-        ProjectNames: [],
-        ProjectName:'',
+  //     // Reset all dropdowns to "None"
+  //     this.setState({
+  //          // Reset Client dropdown                   
+  //        PONumber:'',
+  //        PONumbers:[],
+  //       ProjectNames: [],
+  //       ProjectName:'',
        
      
-        StartDate:'',
-        EndDate:'',
+  //       StartDate:'',
+  //       EndDate:'',
        
-        ClientName: selectedClientName
-      });
+  //       ClientName: selectedClientName
+  //     });
 
-        this.fetchProjetsbasedonClientName(selectedClientName,'');
-        this.fetchclientidBasedOnClientName(selectedClientName);
+  //       this.fetchProjetsbasedonClientName(selectedClientName,'');
+  //       this.fetchclientidBasedOnClientName(selectedClientName);
   
 
-    }
+  //   }
      
 
 
-    // if (event.target.name != 'IsActive')
-    //   returnObj[event.target.name] = event.target.value;
-    // else
-    //   returnObj[event.target.name] = event.target.checked;
-    // this.setState(returnObj);
+  //   // if (event.target.name != 'IsActive')
+  //   //   returnObj[event.target.name] = event.target.value;
+  //   // else
+  //   //   returnObj[event.target.name] = event.target.checked;
+  //   // this.setState(returnObj);
 
 
-  }
+  // }
 
     private fetchclientidBasedOnClientName = (selectedClientName: string) => {
   
       const TrList = 'Clients';
-      sp.web.lists.getByTitle(TrList).items.select("ID", "Title").filter(`Title eq '${selectedClientName}'`).get().then((Response: any[]) => {
+      sp.web.lists.getByTitle(TrList).items.select("ID", "Title").filter(`Title eq '${selectedClientName}'`).top(2000).get().then((Response: any[]) => {
         console.log(Response);
         if (Response.length > 0) {
           this.setState({ ClientId: Response[0].ID });
@@ -658,28 +875,28 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
     }
   
 
-   private handlePONumber = (event: any) => {
-    let returnObj: any = {};
-    if (event.target.name === 'ProjectName') {
-      // Reset all dropdowns to "None"
-      this.setState({
-        PONumber:'',
-         PONumbers:[],
-        StartDate:'',
-        EndDate:'',
+  //  private handlePONumber = (event: any) => {
+  //   let returnObj: any = {};
+  //   if (event.target.name === 'ProjectName') {
+  //     // Reset all dropdowns to "None"
+  //     this.setState({
+  //       PONumber:'',
+  //        PONumbers:[],
+  //       StartDate:'',
+  //       EndDate:'',
         
-      });
-    }
-    if (event.target.name != 'IsActive')
-      returnObj[event.target.name] = event.target.value;
-    else
-      returnObj[event.target.name] = event.target.checked;
-    this.setState(returnObj);
-    if (event.target.name === 'ProjectName') {
-      this.fetchPONumbersbasedonProject(event.target.value,'');
-    }
+  //     });
+  //   }
+  //   if (event.target.name != 'IsActive')
+  //     returnObj[event.target.name] = event.target.value;
+  //   else
+  //     returnObj[event.target.name] = event.target.checked;
+  //   this.setState(returnObj);
+  //   if (event.target.name === 'ProjectName') {
+  //     this.fetchPONumbersbasedonProject(event.target.value,'');
+  //   }
 
-  }
+  // }
 
     private handleReason = (event:any) => {
         let returnObj: any = {};
@@ -690,31 +907,31 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
         this.setState(returnObj);
     
       }
-    private handleDatefields = (event: any) => {
-    let returnObj: any = {};
-    if (event.target.name === 'PONumber') {
-      // Reset all dropdowns to "None"
-      this.setState({
-        StartDate:'',
-        EndDate:'',
+  //   private handleDatefields = (event: any) => {
+  //   let returnObj: any = {};
+  //   if (event.target.name === 'PONumber') {
+  //     // Reset all dropdowns to "None"
+  //     this.setState({
+  //       StartDate:'',
+  //       EndDate:'',
 
         
-      });
-    }
-    if (event.target.name != 'IsActive')
-      returnObj[event.target.name] = event.target.value;
-    else
-      returnObj[event.target.name] = event.target.checked;
-    this.setState(returnObj);
-    if (event.target.name === 'PONumber') {
-      this.fetchDatesbasedonPONumber(event.target.value,'','');
-    }
+  //     });
+  //   }
+  //   if (event.target.name != 'IsActive')
+  //     returnObj[event.target.name] = event.target.value;
+  //   else
+  //     returnObj[event.target.name] = event.target.checked;
+  //   this.setState(returnObj);
+  //   if (event.target.name === 'PONumber') {
+  //     this.fetchDatesbasedonPONumber(event.target.value,'','');
+  //   }
 
-  }
+  // }
 
   private fetchDatesbasedonPONumber(selectedponumber:any,selectedstartdates:any,selectedendDate:any){
      const POList='PODetails';
-      sp.web.lists.getByTitle(POList).items.select("Id", "EffectiveFrom","EffectiveTo").filter(`PONumber eq '${selectedponumber}'`).get().then((Response: any[])=>{
+      sp.web.lists.getByTitle(POList).items.select("Id", "EffectiveFrom","EffectiveTo").filter(`PONumber eq '${selectedponumber}'`).top(2000).get().then((Response: any[])=>{
             //const { isEditMode } = this.state;
             console.log(Response)
               const {isEditMode}=this.state
@@ -733,7 +950,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
   private fetchPONumbersbasedonProject(selectedproject:any,selectedponumber:any)
   {
         const POList='PODetails';
-         sp.web.lists.getByTitle(POList).items.select("Id", "PONumber").filter(`ProjectTitle eq '${selectedproject}' and ClientName eq '${this.state.ClientName}'`).get().then((Response: any[])=>{
+         sp.web.lists.getByTitle(POList).items.select("Id", "PONumber").filter(`ProjectTitle eq '${selectedproject}' and ClientName eq '${this.state.ClientName}'`).top(2000).get().then((Response: any[])=>{
             const { isEditMode } = this.state;
             const PONumberoptions= Response.map(item=>({
                   label: item.PONumber,
@@ -751,13 +968,13 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
   private fetchProjetsbasedonClientName = (selectedClientName: string,selectedproject:string) => {
      const ProposalList = 'ProposalDetails';
     sp.web.lists.getByTitle(ProposalList).items.select("Id", "Title")
-      .filter(`ClientName eq '${selectedClientName}' and Status ne 'Rejected'`).get().then((Response: any[]) => {
+      .filter(`ClientName eq '${selectedClientName}' and Status ne 'Rejected'`).top(2000).get().then((Response: any[]) => {
         console.log(Response);
        const { isEditMode } = this.state;
-       
-       const Projectoptions=  Response.map(item => ({
-          label: item.Title,
-          value: item.Title
+       const uniqueTitles=Array.from(new Set(Response.map(item=>item.Title)));
+       const Projectoptions=  uniqueTitles.map(title => ({
+          label:title,
+          value:title
         }));
          this.setState({
         ProjectNames: Projectoptions,
@@ -777,9 +994,9 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
       hamburgericon[0]?.classList.add("d-none");
       navBar[0]?.classList.add("d-none");
       return (
-        <div className='noConfiguration'>
+        <div className='noConfiguration w-100'>
           <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
-          <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+          <b>You are not configured in Masters.</b>Please contact Administrator.
         </div>
       );
     }
@@ -836,7 +1053,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
               <div className="row pt-2 px-2">
                 <div className="col-md-3">
                   <div className="light-text">
-                    <label className="z-in-9">Location <span className="mandatoryhastrick">*</span></label>
+                    <label className="">Location <span className="mandatoryhastrick">*</span></label>
                     <select className="form-control" id='ddllocation' required={true} name="Location" value={this.state.Location} onChange={this.handleChange} disabled={this.state.isEditMode || this.state.Locations.length === 1} title="Location" itemRef='Location' ref={this.inputLocation}>
                       <option value=''>None</option>
                       {this.state.Locations.map((location: any, index: any) => (
@@ -849,26 +1066,35 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
                 <div className="col-md-3">
                   <div className="light-text">
                     <label >Client Name<span className="mandatoryhastrick">*</span></label>
-                    <select className="form-control" disabled={this.state.isEditMode} required={true} name="ClientName" id="clientName" value={this.state.ClientName} title="Client Name" onChange={this.handleChange1} itemRef='ClientName' ref={this.inputClientName}>
+                    {/* <select className="form-control" disabled={this.state.isEditMode} required={true} name="ClientName" id="clientName" value={this.state.ClientName} title="Client Name" onChange={this.handleChange1} itemRef='ClientName' ref={this.inputClientName}>
                       <option value=''>None</option>
                       {this.state.ClientNames.map((Clientname: any, index: any) => (
                         <option key={index} value={Clientname.label}>{Clientname.label}</option>
                       ))}
 
-                    </select>
+                    </select> */}
+                        <div className="custom-dropdown">
+                                                <SearchableDropdown label="Client Name" Title="ClientName" name="ClientName" id="Client" placeholderText="None" disabled={this.state.isEditMode} className="" selectedValue={this.state.ClientName} optionLabel={'label'} optionValue={'label'} OptionsList={this.state.ClientNames} onChange={(selectedOption:any, actionMeta:any) => { this.handleChangeClient(selectedOption, actionMeta) }} isRequired={true} refElement={this.inputClientName} noOptionsMessage="None"></SearchableDropdown>
+                           
+                          </div>
+
                   </div>
                 </div>
                     <div className="col-md-3">
                   <div className="light-text">
                     <label >Project<span className="mandatoryhastrick">*</span></label>
                    
-                      <select className="form-control" required={true} name="ProjectName" value={this.state.ProjectName} disabled={this.state.isEditMode} onChange={this.handlePONumber} title="ProjectName" itemRef='ProjectName' ref={this.inputProjectName}>
+                      {/* <select className="form-control" required={true} name="ProjectName" value={this.state.ProjectName} disabled={this.state.isEditMode} onChange={this.handlePONumber} title="ProjectName" itemRef='ProjectName' ref={this.inputProjectName}>
                         <option value=''>None</option>
                         {this.state.ProjectNames.map((ProjectName: any, index: any) => (
                           <option key={index} value={ProjectName.label}>{ProjectName.label}</option>
                         ))}
 
-                      </select>
+                      </select> */}
+                       <div className="custom-dropdown">
+                                                <SearchableDropdown label="Project" Title="ProjectName" name="ProjectName" id="ProjectName" placeholderText="None" disabled={this.state.isEditMode} className="" selectedValue={this.state.ProjectName} optionLabel={'label'} optionValue={'label'} OptionsList={this.state.ProjectNames} onChange={(selectedOption:any, actionMeta:any) => { this.handleChangePONumber(selectedOption, actionMeta) }} isRequired={true} refElement={this.inputClientName} noOptionsMessage="None"></SearchableDropdown>
+                           
+                          </div>
 
                 
                   </div>
@@ -877,14 +1103,17 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
                   <div className="light-text">
                     <label >PO Number<span className="mandatoryhastrick">*</span></label>
                    
-                      <select className="form-control" required={true} name="PONumber" value={this.state.PONumber} disabled={this.state.isEditMode} onChange={this.handleDatefields} title="PONumber" itemRef='PONUmber' ref={this.inputPonumber}>
+                      {/* <select className="form-control" required={true} name="PONumber" value={this.state.PONumber} disabled={this.state.isEditMode} onChange={this.handleDatefields} title="PONumber" itemRef='PONUmber' ref={this.inputPonumber}>
                         <option value=''>None</option>
                         {this.state.PONumers.map((POnumber: any, index: any) => (
                           <option key={index} value={POnumber.label}>{POnumber.label}</option>
                         ))}
 
-                      </select>
-
+                      </select> */}
+                            <div className="custom-dropdown">
+                                                <SearchableDropdown label="PO Number" Title="PONumber" name="PONumber" id="PONumber" placeholderText="None" disabled={this.state.isEditMode} className="" selectedValue={this.state.PONumber} optionLabel={'label'} optionValue={'label'} OptionsList={this.state.PONumers} onChange={(selectedOption:any, actionMeta:any) => { this.handleDatefields(selectedOption, actionMeta) }} isRequired={true} refElement={this.inputClientName} noOptionsMessage="None"></SearchableDropdown>
+                           
+                          </div>
                 
                   </div>
                 </div>
@@ -934,7 +1163,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
                        )}
                       <div className="col-md-3 mt-2">
                     <div className="light-text div-readonly">
-                      <label className="z-in-9">Start Date<span className="mandatoryhastrick">*</span></label>
+                      <label className="">Start Date<span className="mandatoryhastrick">*</span></label>
                       <div className="custom-datepicker" id="DivStartDate">
                         <DatePicker onDatechange={(date: any)=>this.handleDateChange(date,'StartDate')} name={"StartDate"} isDisabled={this.state.isEditMode?(this.state.onLoadStatus != "In-Progress" && this.state.onLoadStatus != "" ):false}  ref={this.inputStartDate} placeholder="MM/DD/YYYY" selectedDate={this.state.StartDate} id={'txtStartDate'} title={"Start Date"} />
                       </div>
@@ -943,7 +1172,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
                   </div>
                      <div className="col-md-3 mt-2">
                     <div className="light-text div-readonly">
-                      <label className="z-in-9">End Date<span className="mandatoryhastrick">*</span></label>
+                      <label className="">End Date<span className="mandatoryhastrick">*</span></label>
                       <div className="custom-datepicker" id="DivEndDate">
                         <DatePicker onDatechange={(date: any)=>this.handleDateChange(date,'EndDate')} name={"EndDate"} isDisabled={this.state.isEditMode?(this.state.onLoadStatus != "In-Progress" && this.state.onLoadStatus != "" ):false} ref={this.inputEndDate} placeholder="MM/DD/YYYY" selectedDate={this.state.EndDate} id={'txtEndDate'} title={"End Date"} />
                       </div>
@@ -996,7 +1225,31 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
                     <button type="button" id="btnCancel" className="CancelButtons btn" onClick={this.handleCancel} >Cancel</button>
                   </div>
                 </div>
-              
+               {this.state.isEditMode && (
+                  <div className="row justify-content-md-left mt-4">
+                    <div className="col-md-12">
+                      <div className="p-rel">
+                        <h6 className="p-2 mb-0 c-bg-title">Comments History</h6>
+                      </div>
+                      {/* <h6 className="mb-2">Comments History</h6> */}
+                      <div className="px-2">
+                        <table className="table border mt-2">
+                          <thead>
+                            <tr>
+                              <th>Version</th>
+                              <th>Project</th>
+                              <th>PO Number</th>        
+                              <th>Created On</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {this.BindComments()}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
 

@@ -91,6 +91,7 @@ import { useRef, useState } from "react";
 
 function FileUpload(props: any) {
     const isMultiAllowed = props.ismultiAllowed;
+    const isMandatory = props.isMandatory;
     const isnewForm = props.isnewForm;
     const fileArr = props.files?.[0] || [];
     const delefileArr = props.files?.[1] || [];
@@ -184,7 +185,7 @@ function FileUpload(props: any) {
 
     return (
         <div>
-            <h6 className="my-2">Attachment</h6>
+            <h6 className="my-2">Attachment {isMandatory && <span className="mandatoryhastrick">*</span>}</h6>
             <div>
                 <div>
                     <button type="button" onClick={showFilePopup} className="btn upload-btn">

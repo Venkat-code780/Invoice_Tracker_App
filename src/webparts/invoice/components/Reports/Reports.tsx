@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { sp, SPHttpClient } from '@pnp/sp/presets/all';
-// import TableGenerator from '../Shared/TableGenerator';
+
 import DateUtilities from '../Utilities/Dateutilities';
 import { Chart } from "react-google-charts";
 import DatePicker from '../Shared/DatePickerField';
@@ -11,9 +11,7 @@ import formValidation from '../Utilities/Formvalidator';
 import { showToast } from '../Utilities/toastHelper';
 import { showLoader,hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component';
- 
-
-// import DateUtilities from '../Utilities/Dateutilities';
+ import Icons from '../../assets/Icons';
 
 export interface IReportProps {
   match: any;
@@ -41,6 +39,10 @@ export interface IReportState {
   pieData: any;
   loading: boolean;
   unauthorized: boolean;
+    islocationconfigured:boolean;
+    isSalesonly:boolean;
+    noDataFound:boolean;
+   
 }
 
 class Reports extends React.Component<IReportProps, IReportState> {
@@ -77,7 +79,11 @@ class Reports extends React.Component<IReportProps, IReportState> {
         chartData: null,
   pieData: null,
       loading: false,
-      unauthorized: false
+      unauthorized: false,
+      islocationconfigured:true,
+       isSalesonly: false,
+       noDataFound:false
+     
 
     };
   }
@@ -120,6 +126,7 @@ class Reports extends React.Component<IReportProps, IReportState> {
       const isSales = userGroups.some(g => g.Title === 'Sales Team');
       const isDev = userGroups.some(g => g.Title === 'Dev Team'); 
             const isAuthorized = isAdmin || isBilling || isSales || isDev;
+                const isOnlySales = isSales && !isAdmin && !isBilling && !isDev;
       if (!isAuthorized) {
            this.setState({
         unauthorized: true,
@@ -179,21 +186,28 @@ class Reports extends React.Component<IReportProps, IReportState> {
       // Fetch user locations from the billing team
       userLoc = Array.from(new Set(billingData.map(b => b.Location)));
       userClients = masterClientData.filter(c => userLoc.includes(c.Location));
+      if(userLoc.length === 0){
+        this.setState({islocationconfigured:false});
+      }
     } else if (isSales) {
       const userEmail = currentUser.Email;
       userClients = masterClientData.filter(c =>
         c.SalesPerson.includes(userEmail)
       );
       userLoc = Array.from(new Set(userClients.map(c => c.Location))); ;
+       if (userLoc.length === 0) {
+          this.setState({ islocationconfigured: false });
+        }
     }
 
     this.setState({
       Locations: userLoc.map(item=>({
                  label: item,
                  value: item
-               })),
+               })).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" })),
       
       Location: userLoc.length === 1 ? userLoc[0] : '',
+      isSalesonly: isOnlySales
     });
     hideLoader();
       if(userLoc.length === 1){
@@ -204,6 +218,18 @@ class Reports extends React.Component<IReportProps, IReportState> {
     } catch (error) {
       console.error('Error fetching user groups:', error);
     }
+  }
+  private configurationValidtion = () => {
+    var navBar = document.getElementsByClassName("sidebar");
+    var hamburgericon=document.getElementsByClassName("click-nav-icon");
+    hamburgericon[0]?.classList.add("d-none");
+    navBar[0]?.classList.add("d-none");
+    return (
+      <div className='noConfiguration w-100'>
+        <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
+        <b>You are not configured in Masters.</b>Please contact Administrator.
+      </div>
+    );
   }
 
 
@@ -222,13 +248,14 @@ class Reports extends React.Component<IReportProps, IReportState> {
   }
 
   private SubmitData = () => {
+        showLoader();
         this.tempInvoiceResults = [];
          this.tempPOResults = [];
       let data = {
-           location: { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputLocation },
-            clientName: { val: this.state.ClientName, required: true, Name: 'ClientName', Type: ControlType.string, Focusid: this.inputClientName },
-            startDate: { val: this.state.StartDate, required: true, Name: 'StartDate', Type: ControlType.date, Focusid:'DivStartDate' },
-            endDate: { val: this.state.EndDate, required: true, Name:' EndDate', Type: ControlType.date, Focusid:'DivEndDate' }
+           location: { val: this.state.Location, required: true, Name: "'Location'", Type: ControlType.string, Focusid: this.inputLocation },
+            clientName: { val: this.state.ClientName, required: true, Name: "'Client Name'", Type: ControlType.string, Focusid: this.inputClientName },
+            startDate: { val: this.state.StartDate, required: true, Name: "'StartDate'", Type: ControlType.date, Focusid:'DivStartDate' },
+            endDate: { val: this.state.EndDate, required: true, Name:"' EndDate'", Type: ControlType.date, Focusid:'DivEndDate' }
            
            
          };
@@ -243,6 +270,7 @@ class Reports extends React.Component<IReportProps, IReportState> {
     } else {
             //  this.setState({ errorMessage: isValid.message });
             showToast('error', isValid.message);
+            hideLoader();
           }
   }
   private mmddyyyyhhmmtoDateTime(dateTimeStr: string): Date | null {
@@ -433,12 +461,17 @@ class Reports extends React.Component<IReportProps, IReportState> {
     }
   }
 private getCombindData = (poList: any[], invoiceList: any[]) => {
-  if (!poList || !invoiceList) return;
+  console.log("PoList",poList);
+    console.log("invoiceList",invoiceList);
+
+  if (!poList || !invoiceList || poList.length === 0 && invoiceList.length === 0){
+       this.setState({noDataFound:true});
+  }
 
   const chartData: any[][] = [
     ["PO Number", "Total Amount", "Received Amount", "Invoiced Amount", "Balance Amount"]
   ];
-
+   
     let totalAllPO = 0;
   let totalReceived = 0;
   let totalInvoiced = 0;
@@ -506,9 +539,9 @@ private getCombindData = (poList: any[], invoiceList: any[]) => {
   });
 
   // If no data found, show empty row
-  if (chartData.length === 1) {
-    chartData.push(["No Data", 0, 0, 0, 0]);
-  }
+  // if (chartData.length === 1) {
+  //   chartData.push(["No Data", 0, 0, 0, 0]);
+  // }
 
     const pieData = [
     ["Status", "Amount"],
@@ -518,14 +551,17 @@ private getCombindData = (poList: any[], invoiceList: any[]) => {
     ["Balance Amount", totalBalance]
   ];
     
-
+const hasData = chartData.length > 1;
   this.setState({ 
     chartData: chartData,
-    pieData: pieData
+    pieData: pieData,
+    noDataFound:!hasData
 
    });
+   hideLoader();
     
   console.log("✅ Final Chart Data:", chartData);
+  console.log("PieData" ,pieData);
 };
 
 
@@ -544,7 +580,8 @@ private getCombindData = (poList: any[], invoiceList: any[]) => {
             if (selectedLocation === '') {
             this.setState({
                 ClientName: 'None', 
-                ClientNames: [{ label: 'None', value: 'None' }]
+                ClientNames: [{ label: 'None', value: 'None' }],
+                Location:''
             });
         } else {
       this.setState({
@@ -557,25 +594,51 @@ private getCombindData = (poList: any[], invoiceList: any[]) => {
   }
 
   }
-  private fetchClientsBasedOnLocation = (selectedLocation: string) => {
-    const TrList = 'Clients';
-    sp.web.lists.getByTitle(TrList).items.filter(`Location eq '${selectedLocation}'`).select('Title', 'Id').get().then((Response: any[]) => {
-      console.log(Response);
 
-      const clientOptions = Response.map(item => ({
-        label: item.Title,
-        value: item.Title
-      }));
-    
-      clientOptions.unshift({ label: 'All', value: 'All' });
+
+ private fetchClientsBasedOnLocation = async (selectedLocation: string) => {
+    try{
+      showLoader();
+    const TrList = 'Clients';
    
+         const currentUser = await sp.web.currentUser.get();
+        const userEmail = currentUser.Email;
+        let filterQuery = `Location eq '${selectedLocation}'`;
+        if (this.state.isSalesonly) {
+      // Check both SalesPerson and AlternateSalesPerson fields
+      filterQuery += ` and (Sales_x0020_Person_x0020_Name/EMail eq '${userEmail}' or Alternate_x0020_Sales_x0020_Pers/EMail eq '${userEmail}')`;
+    }
+
+ const response: any[] = await sp.web.lists
+      .getByTitle(TrList)
+      .items
+      .filter(filterQuery)
+      .select("Id", "Title", "Sales_x0020_Person_x0020_Name/EMail", "Alternate_x0020_Sales_x0020_Pers/EMail")
+      .expand("Sales_x0020_Person_x0020_Name", "Alternate_x0020_Sales_x0020_Pers")
+      .get();
+       const clientOptions = response.map(item => ({
+      label: item.Title,
+        value: item.Title
+    })).filter(item => item.label !== '')
+    .sort((a, b) =>
+        a.label.localeCompare(b.label, undefined,{ sensitivity: 'base' })
+      );
+
+    clientOptions.unshift({ label: 'All', value: 'All' });
       this.setState({
         ClientNames: clientOptions,
-
+        ClientName: clientOptions.length > 0 ? clientOptions[0].label : ''
       });
-      
-    });
+
   }
+  catch(error){
+    console.log("Error in data" +error);
+  }finally{
+    hideLoader();
+  }
+  }
+
+
 
   private getEstimationsListData = () => {
     let locationsList = 'Location';
@@ -585,7 +648,7 @@ private getCombindData = (poList: any[], invoiceList: any[]) => {
         const locationOptions = Locations.map(item => ({
           label: item.Title,
           value: item.Title
-        }));
+        })).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
         this.setState({
           Locations: locationOptions,
 
@@ -611,23 +674,7 @@ private getCombindData = (poList: any[], invoiceList: any[]) => {
   }
 };
 
-  // handleDateChange = (date: any, fieldName: string) => {
-  //   const newDate=date[0];
-  //   if (fieldName === 'StartDate') {
-  //      if (this.state.StartDate && !newDate) {
-  //     return;
-  //   }
 
-  //     this.setState({ StartDate: newDate });
-      
-  //   }
-  //   else if (fieldName === 'EndDate') {
-  //      if (this.state.EndDate && !newDate) {
-  //     return;
-  //   }
-  //   this.setState({ EndDate: newDate });
-  //   }
-  // };
   private handleCancel = () => {
     this.setState({ Homeredirect: true, errorMessage: "" });
   }
@@ -671,6 +718,9 @@ private getCombindData = (poList: any[], invoiceList: any[]) => {
   colors: ["#808080", "#008000", "#ffa500", "#ff0000"],
 };
 
+ 
+
+
 const chartOptions = {
   isStacked: true, 
   // stacked: true, 
@@ -697,49 +747,10 @@ const chartOptions = {
   colors:["#808080", "#008000", "#ffa500", "#ff0000"],
 
 };
-// const chartOptions = {
-//       isStacked: true,
-//       legend: { position: 'top', alignment: 'start' },
-//       width: 900,
-//       height: 400,
-//       vAxis: {
-//         viewWindow: {
-//           min: 0,
-//         },
-//       },
-//       colors: ['Gray', 'lightGreen', 'Yellow', 'Red'],
-//       vAxes: {
-//         0: {},
-//         1: {
-//           gridlines: {
-//             color: 'transparent',
-//           },
-//           textStyle: {
-//             color: 'transparent',
-//           },
-//         },
-//       },
-//       series: {
-//         1: {
-//           targetAxisIndex: 1,
-//           color: 'Green',
-//         },
-//         2: {
-//           targetAxisIndex: 1,
-//           color: 'Orange',
-//         },
-//         3: {
-//           targetAxisIndex: 1,
-//           color: 'Red',
-//         },
-//         4: {
-//           targetAxisIndex: 1,
-//         },
-//       },
-//     };
 
     return (
       <React.Fragment>
+            {this.state.islocationconfigured &&(
       <div className='container-fluid'>
         <div className='FormContent'>
           <div className='title'> PO and Invoice
@@ -753,7 +764,7 @@ const chartOptions = {
               <div className="row pt-2 px-2">
                 <div className="col-md-3">
                   <div className="light-text">
-                    <label className="z-in-9">Location <span className="mandatoryhastrick">*</span></label>
+                    <label className="">Location <span className="mandatoryhastrick">*</span></label>
                     <select className="form-control" id='ddlLocation' required={true} name="Location" value={this.state.Location} onChange={this.handleChange} title="Location" itemRef='Location' ref={this.inputLocation}>
                       <option value=''>None</option>
                       {this.state.Locations.map((location: any, index: any) => (
@@ -766,19 +777,21 @@ const chartOptions = {
                 <div className="col-md-3">
                   <div className="light-text">
                     <label >Client Name<span className="mandatoryhastrick">*</span></label>
-                    <select className="form-control" required={true} name="ClientName" id="clientName" value={this.state.ClientName} title="Client Name" onChange={this.handleChange1} itemRef='ClientName' ref={this.inputClientName}>
-                      <option value=''>None</option>
-                      {this.state.ClientNames.map((Clientname: any, index: any) => (
+                    <select className="form-control" required={true} name="ClientName" id="ClientName" value={this.state.ClientName} title="ClientName" onChange={this.handleChange1} itemRef='ClientName' ref={this.inputClientName}>
+                      {this.state.ClientNames.length === 0 ? (
+                       <option value="">None</option>
+                      ):(
+                      this.state.ClientNames.map((Clientname: any, index: any) => (
                         <option key={index} value={Clientname.label}>{Clientname.label}</option>
-                      ))}
-
+                      ))
+                    )}
                     </select>
                   </div>
                 </div>
  
                 <div className="col-md-3">
                   <div className="light-text div-readonly">
-                    <label className="z-in-9">Start Date<span className="mandatoryhastrick">*</span></label>
+                    <label className="">Start Date<span className="mandatoryhastrick">*</span></label>
                     <div className="custom-datepicker" id="DivStartDate">
 
                       <DatePicker onDatechange={(date: any) => this.handleDateChange(date, 'StartDate')} placeholder="MM/DD/YYYY" ref={this.inputEndDate} endDate={new Date()} selectedDate={this.state.StartDate} maxDate={new Date()} id={'txtStartDate'} title={"Start Date"} />
@@ -787,7 +800,7 @@ const chartOptions = {
                 </div>
                 <div className="col-md-3">
                   <div className="light-text div-readonly">
-                    <label className="z-in-9">End Date<span className="mandatoryhastrick">*</span></label>
+                    <label className="">End Date<span className="mandatoryhastrick">*</span></label>
                     <div className="custom-datepicker" id="DivEndDate">
                       <DatePicker onDatechange={(date: any) => this.handleDateChange(date, 'EndDate')} ref={this.inputStartDate} placeholder="MM/DD/YYYY" endDate={new Date()} selectedDate={this.state.EndDate} maxDate={new Date()} id={'txtEndDate'} title={"End Date"} />
                     </div>
@@ -810,13 +823,17 @@ const chartOptions = {
                     <button type="button" id="btnCancel" className="CancelButtons btn" onClick={this.handleCancel} >Cancel</button>
                   </div>
                 </div>
-
-
+                  {this.state.noDataFound && 
+                  <div className="custom-alert">
+                   No data found!
+               </div>
+                  }
               </div>
-
-              {this.state.chartData && this.state.pieData.length > 1 && (
+               
+              {this.state.chartData && this.state.chartData.length > 1 && (
               <Chart chartType="Bar" width="100%" height="400px" data={this.state.chartData} options={chartOptions} />
               )}
+         
               {this.state.pieData && this.state.pieData.length > 1 && ( 
               <Chart chartType="PieChart" width="100%" height="400px" data={this.state.pieData} options={pieOptions} />
               )}
@@ -829,7 +846,9 @@ const chartOptions = {
     
         </div>
       </div>
-
+      )}
+      {!this.state.islocationconfigured && this.configurationValidtion()}
+      
         </React.Fragment>
     );
   }

@@ -48,11 +48,12 @@ export interface POViewProps {
     
       
       }
-    public componentDidMount() {
+    public async componentDidMount() {
       document.getElementById('ddlsearch')?.focus();
         //console.log('Project Code:', this.props);
          showLoader();
-       this.getCurrentUserGroups();
+       await this.getCurrentUserGroups();
+       hideLoader();
         // this.GetOnloadData();
       }
     // private GetOnloadData = () => {
@@ -83,9 +84,9 @@ export interface POViewProps {
          hamburgericon[0]?.classList.add("d-none");
          navBar[0]?.classList.add("d-none");
          return (
-           <div className='noConfiguration'>
+           <div className='noConfiguration w-100'>
              <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
-             <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+             <b>You are not configured in Masters.</b>Please contact Administrator.
            </div>
          );
        }
@@ -119,7 +120,7 @@ export interface POViewProps {
     }
 
     // Convert to array and sort descending
-    return Array.from(yearsSet).sort((a, b) => a - b);
+    return Array.from(yearsSet).sort((a, b) => b - a);
 };
 
                 private async getCurrentUserGroups(){
@@ -192,10 +193,10 @@ export interface POViewProps {
                          const[estimations,proposals,PODetails]= await Promise.all([ sp.web.lists.getByTitle("Estimations").items
                            .filter(`SubmittedBy eq 'Dev Team'`)
                            .expand("Author", "ClientName")
-                           .select("Author/Title","Author/Id","ClientName/Title","ClientName/Id","*")
+                           .select("Author/Title","Author/Id","ClientName/Title","ClientName/Id","*").top(5000)
                            .get(),
-                            sp.web.lists.getByTitle('ProposalDetails').items.expand("SubmittedBy").select("SubmittedBy/Title","SubmittedBy/Id","*").orderBy("Id", false).get(),
-                             sp.web.lists.getByTitle('PODetails').items.expand("Author").select("Author/Title","Author/Id","*").orderBy("Id", false).get()
+                            sp.web.lists.getByTitle('ProposalDetails').items.expand("SubmittedBy").select("SubmittedBy/Title","SubmittedBy/Id","*").orderBy("Id", false).top(5000).get(),
+                             sp.web.lists.getByTitle('PODetails').items.expand("Author").select("Author/Title","Author/Id","*").orderBy("Id", false).top(5000).get()
                          ]);
       
                           const estimationIds = new Set(estimations.map((est: any) => est.Id.toString()));
@@ -226,10 +227,35 @@ export interface POViewProps {
                          userClients = masterClientData.filter(c =>
                            c.SalesPerson.includes(userEmail)
                          );
-                         userLoc = Array.from(new Set(userClients.map(c => c.Location))); ;
+                         userLoc = Array.from(new Set(userClients.map(c => c.Location)));
+                          if (userLoc.length === 0) {
+                                 this.setState({ islocationconfigured: false });
+                          }
+                                const clientIds = userClients.map(c => c.Client); 
+                            
+                          const fetchedEstimations = userLoc.map((location: string) => {
+                          
+                          const clientFilter = clientIds
+                              .map(Title  => `ClientName eq '${Title}'`)  
+                              .join(' or '); 
+                                 console.log("Client Filter Query:", clientFilter);
+                          const filterQuery = `ProposalFor eq '${location}' and (${clientFilter})`;
+                           console.log("Filter Query:", filterQuery);
+                            return sp.web.lists.getByTitle("PODetails").items
+                              .filter(filterQuery) 
+                              .expand("Author") 
+                              .select("Author/Title","Author/Id","*").orderBy("Id", false).top(5000) // Select required fields
+                              .get();
+                          });
+                             const estimationData: any[][] = await Promise.all(fetchedEstimations);
+                            const flatEstimationData = estimationData.reduce((acc, curr) => acc.concat(curr), []);
+                            flatEstimationData.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime());
+                            this.BindData(flatEstimationData);
+                            return;
+
                        }             
                          const fetchedestimations=userLoc.map((location: string) => {
-                                 return sp.web.lists.getByTitle('PODetails').items.filter(`ProposalFor eq '${location}'`).expand("Author").select("Author/Title","Author/Id","*").orderBy("Id", false).get()
+                                 return sp.web.lists.getByTitle('PODetails').items.filter(`ProposalFor eq '${location}'`).expand("Author").select("Author/Title","Author/Id","*").orderBy("Id", false).top(5000).get()
                                    
                                  });
                        const estimationData: any[][] = await Promise.all(fetchedestimations);
@@ -257,9 +283,10 @@ export interface POViewProps {
 
 
       private handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        showLoader();
         const selectedYear = e.target.value;
         this.setState({ selectedYear });
-    
+        setTimeout(() => {
         if (selectedYear === '') {
           // If no year is selected, reset to show all data
           this.setState({ data: this.state.allData });
@@ -270,6 +297,8 @@ export interface POViewProps {
           );
           this.setState({ data: filteredData });
         }
+        hideLoader();
+      }, 100); // Simulate a delay for loading effect
       };
 
       private BindData(response:any) {
@@ -292,7 +321,7 @@ export interface POViewProps {
         });
         const allYears = this.getYears(response);
         this.setState({ data: data,allYears:allYears,allData:data,SaveUpdateText: 'Submit' });
-        hideLoader();
+
       }
 
 private  handleRowClicked = (row:any,Id?:any) => {
@@ -316,7 +345,8 @@ private  handleRowClicked = (row:any,Id?:any) => {
                         </div>
                       </React.Fragment>
                     );
-                  }
+                  },
+                  width:'60px',
                 },
                 
           {
@@ -401,8 +431,8 @@ private  handleRowClicked = (row:any,Id?:any) => {
                 
               </div>
               <div className="after-title"></div>
-              <div className="row pt-2 px-2">    
-              <div className="col-md-4">
+              <div className="px-3 View-Table">    
+              <div className="col-md-4 px-0">
               <div className="light-text mt-3 mb-2">
                                                                <label color='#0b3e50'>Year</label>
                                                                 <select className="form-control" id='ddlsearch' required={true} name="selectedYear" value={this.state.selectedYear} title="selectedYear" onChange={this.handleYearChange}>
@@ -420,14 +450,15 @@ private  handleRowClicked = (row:any,Id?:any) => {
                                                                 </select>
                                                                 </div>
                                                                 </div>
-                                                            </div>
+                                                          
              
               {/* <div className="light-box border-box-shadow mx-2 table-head-1st-td py-2 right-search-table"> */}
-                 <div className="mx-2 border-box-shadow light-box table-responsive dataTables_wrapper-overflow right-search-table py-2"> 
+                 <div className="border-box-shadow light-box table-responsive dataTables_wrapper-overflow right-search-table py-2"> 
 
             
                     <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={this.handleRowClicked} ></TableGenerator>
                   </div>
+                    </div>
               </div>
               </div>
              )}

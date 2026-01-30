@@ -48,14 +48,17 @@ class EstimationView extends React.Component<EstimationViewProps, EstimationView
 
 
   }
-  public componentDidMount() {
+  public async componentDidMount() {
     document.getElementById('ddlsearch')?.focus();
     //console.log('Project Code:', this.props);
 
     // this.GetOnloadData();
     showLoader();
+        await this.getCurrentUserGroups();
 
-    this.getCurrentUserGroups();
+     
+    
+    
 
   }
 
@@ -127,7 +130,7 @@ class EstimationView extends React.Component<EstimationViewProps, EstimationView
         await sp.web.lists.getByTitle("Estimations").items
           .filter(`SubmittedBy eq 'Dev Team'`)
           .expand("Author", "ClientName")
-          .select("Author/Title", "Author/Id", "ClientName/Title", "ClientName/Id", "*")
+          .select("Author/Title", "Author/Id", "ClientName/Title", "ClientName/Id", "*").top(5000)
           .get().then((billingTeamMatrixData: any[]) => {
             // billingTeamMatrixData.sort((a, b) => b.Id - a.Id);
             billingTeamMatrixData.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime())
@@ -154,15 +157,39 @@ class EstimationView extends React.Component<EstimationViewProps, EstimationView
         userClients = masterClientData.filter(c =>
           c.SalesPerson.includes(userEmail)
         );
-        userLoc = Array.from(new Set(userClients.map(c => c.Location)));;
-      }
+        userLoc = Array.from(new Set(userClients.map(c => c.Location)));
+         if (userLoc.length === 0) {
+          this.setState({ islocationconfigured: false });
+        }
+       const clientIds = userClients.map(c => c.ClientID); 
+  
 
+const fetchedEstimations = userLoc.map((location: string) => {
+
+const clientFilter = clientIds
+    .map(id => `ClientName/Id eq ${id}`) 
+    .join(' or '); 
+       console.log("Client Filter Query:", clientFilter);
+const filterQuery = `GDCOrOnsite eq '${location}' and (${clientFilter})`;
+ console.log("Filter Query:", filterQuery);
+  return sp.web.lists.getByTitle("Estimations").items
+    .filter(filterQuery) 
+    .expand("Author", "ClientName") 
+    .select("Author/Title", "Author/Id", "ClientName/Title", "ClientName/Id", "*").orderBy("Id", false).top(5000) // Select required fields
+    .get();
+});
+   const estimationData: any[][] = await Promise.all(fetchedEstimations);
+  const flatEstimationData = estimationData.reduce((acc, curr) => acc.concat(curr), []);
+  flatEstimationData.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime());
+  this.BindData(flatEstimationData);
+  return;
+  }
 
       const fetchedestimations = userLoc.map((location: string) => {
         return sp.web.lists.getByTitle("Estimations").items
           .filter(`GDCOrOnsite eq '${location}'`)
           .expand("Author", "ClientName")
-          .select("Author/Title", "Author/Id", "ClientName/Title", "ClientName/Id", "*").orderBy("Id", false)
+          .select("Author/Title", "Author/Id", "ClientName/Title", "ClientName/Id", "*").orderBy("Id", false).top(5000)
           .get()
       });
 
@@ -171,70 +198,17 @@ class EstimationView extends React.Component<EstimationViewProps, EstimationView
         return acc.concat(curr);  // Concatenates each sub-array into a single array
       }, []);
       // flatEstimationData.sort((a, b) => b.Id - a.Id)
+      
       flatEstimationData.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime())
       this.BindData(flatEstimationData);
 
-
+     
     } catch (error) {
       console.error('Error fetching user groups:', error);
     }
   }
 
 
-
-  // private GetOnloadData = () => {
-  //     let TrList = 'Estimations';
-  //     try {
-
-  //       // get all the items from a list
-  //       sp.web.lists.getByTitle(TrList).items.expand("Author,ClientName").select("Author/Title","Author/Id","ClientName/Title","ClientName/Id","*").orderBy("Id", false).get().
-  //         then((response: any[]) => {
-  //           //console.log(response);
-  //           this.BindData(response);
-  //         });
-  //     }
-  //     catch (e) {
-  //       this.setState({
-  //         loading: false,
-  //         modalTitle: 'Error',
-  //         modalText: 'Sorry! something went wrong',
-  //         showHideModal: true,
-  //         isSuccess: false
-  //       });
-  //       console.log('failed to fetch data');
-  //     }
-  //   }
-
-  // private getYears = (data: any[]) => {
-  //   const years: any[] = [];
-  //   data.forEach(function (item) {
-  //     const year = new Date(item.SubmittedDate).getFullYear();
-  //     if (years.indexOf(year) === -1) {
-  //       years.push(year);
-  //     }
-  //   });
-  //   return years.sort((a, b) => b - a);
-
-  // };
-// private getYears = (data: any[]) => {
-//     const currentYear = new Date().getFullYear();
-//     const startYear = 2021;
-//     const yearsSet = new Set<number>();
-
-//     // Add years from data (optional, if needed)
-//     data.forEach(item => {
-//         const year = new Date(item.SubmittedDate).getFullYear();
-//         yearsSet.add(year);
-//     });
-
-//     // Ensure all years from 2021 to current year are included
-//     for (let year = startYear; year <= currentYear; year++) {
-//         yearsSet.add(year);
-//     }
-
-//     // Convert to array and sort descending
-//     return Array.from(yearsSet).sort((a, b) => b - a);
-// };
 
 private getYears = (data: any[]) => {
     const currentYear = new Date().getFullYear();
@@ -255,13 +229,14 @@ private getYears = (data: any[]) => {
     }
 
     // Convert to array and sort descending
-    return Array.from(yearsSet).sort((a, b) => a - b);
+    return Array.from(yearsSet).sort((a, b) => b - a);
 };
 
   private handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    showLoader();
     const selectedYear = e.target.value;
     this.setState({ selectedYear });
-
+     setTimeout(() => {
     if (selectedYear === '') {
       // If no year is selected, reset to show all data
       this.setState({ data: this.state.allData });
@@ -271,7 +246,10 @@ private getYears = (data: any[]) => {
         (item: { SubmittedDate: string }) => new Date(item.SubmittedDate).getFullYear().toString() === selectedYear
       );
       this.setState({ data: filteredData });
+
     }
+    hideLoader();
+  },100);
   };
    private configurationValidtion = () => {
         var navBar = document.getElementsByClassName("sidebar");
@@ -279,16 +257,16 @@ private getYears = (data: any[]) => {
         hamburgericon[0]?.classList.add("d-none");
         navBar[0]?.classList.add("d-none");
         return (
-          <div className='noConfiguration'>
+          <div className='noConfiguration w-100'>
             <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
-            <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+            <b>You are not configured in Masters.</b>Please contact Administrator.
           </div>
         );
       }
 
   private BindData(response: any) {
     let data: any = [];
-
+    
     response.forEach((Item: any) => {
       data.push({
         Id: Item.Id,
@@ -330,7 +308,8 @@ private getYears = (data: any[]) => {
               </div>
             </React.Fragment>
           );
-        }
+        },
+        width:'60px',
       },
 
       {
@@ -382,7 +361,7 @@ private getYears = (data: any[]) => {
 
       },
       {
-        name: "SubmittedBy",
+        name: "Submitted By",
         selector: (row: any, i: any) => row.Author,
         sortable: true,
 
@@ -408,8 +387,8 @@ private getYears = (data: any[]) => {
 
               </div>
               <div className="after-title"></div>
-              <div className="row pt-2 px-2">
-                <div className="col-md-4">
+              <div className="px-3 View-Table">
+                <div className="col-md-4 px-0">
                   <div className="light-text mt-3 mb-2">
                     <label color='#0b3e50'>Year</label>
                     <select className="form-control" id='ddlsearch' required={true} name="selectedYear" value={this.state.selectedYear} title="selectedYear" onChange={this.handleYearChange}>
@@ -427,16 +406,15 @@ private getYears = (data: any[]) => {
                     </select>
                   </div>
                 </div>
-              </div>
+            
 
               {/* <div className="light-box border-box-shadow mx-2 table-head-1st-td py-2 right-search-table"> */}
-              <div className="mx-2 border-box-shadow light-box table-responsive dataTables_wrapper-overflow right-search-table py-2">
-
-
+               <div className="border-box-shadow light-box table-responsive dataTables_wrapper-overflow right-search-table py-2">
 
                 <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={this.handleRowClicked} ></TableGenerator>
               </div>
-            </div>
+              </div>
+              </div>
           </div>
           )}
           {!this.state.islocationconfigured && this.configurationValidtion()}

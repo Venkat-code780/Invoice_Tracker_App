@@ -1,11 +1,11 @@
 
-import Location2 from "../Masters/Location2";
+import Location2 from "../Masters/Location";
 
 
 
 const sitePermissions=[
     {
-    link: '/Client2',
+    link: '/Client',
     accessTo: ['P&I Administrators'],
     canActivate: true,
     component: Location2,

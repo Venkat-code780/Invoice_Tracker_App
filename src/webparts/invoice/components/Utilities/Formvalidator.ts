@@ -197,16 +197,52 @@ function validate(data:any){
 // let retunobject ={message,status};
 // return retunobject;
 // }
+ function ValidateInputFiles( fileArray: any, isRequired: boolean ){
+    let status = true;
+    let message ="";
+    var regex = /^[A-Za-z0-9_\- ()#]+$/;
  
+    if( fileArray.length  == 0 && isRequired ){
+        message = "Please upload any document";
+        status =  false;
+        let retunobject ={message,status};
+        return retunobject;
+    }
+ 
+    var element = document.getElementsByClassName("focus-Div");
+    if( element.length > 0 ){
+        for( let i=0;i<element.length;i++){
+            element[i].classList.remove("focus-Div");
+        }
+    }
+ 
+    for (let i in  fileArray) {
+        const fileName = fileArray[i].name;
+        if(!(regex.test(fileName.replace(/\.[^/.]+$/, "")))){
+            message = "Special characters are not allowed in uploaded File '" + fileName + "'";
+            status = false;
+ 
+            let element = document.getElementById("li_"+i);
+            if( element ){
+                element.focus();
+                element.classList.add('focus-Div');
+            }
+            break;
+        }
+    }
+    let retunobject ={message,status};
+    return retunobject;
+}
+
 class formValidation {
    public static checkValidations=(formData:any)=>{
        let status= validate(formData);
        return status;
      }
- 
-    // public static multiplePeoplePickerValidation=(formData:any)=>{
-    //     let status= peoplePickerValidation(formData);
-    //     return status;
-    //   }
+  public static FilesValidation = ( filesArray: any, isRequired:boolean ) =>{
+        let status = ValidateInputFiles(filesArray, isRequired);
+        return status;
+    }
  }
+
  export default formValidation;

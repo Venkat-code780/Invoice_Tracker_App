@@ -117,31 +117,24 @@ class Estimation extends React.Component<IEstimationsProps, IEstimationsState> {
         this.inputRemarks = React.createRef<HTMLTextAreaElement>();
        this.inputEstimation = React.createRef<HTMLSelectElement>();
         this.inputSubmittedDate = React.createRef<HTMLInputElement>();
-        // this.inputHours = React.createRef();
-        // this.inputEstimationTitle = React.createRef();
-        // this.inputAttachment = React.createRef();
-        // this.inputSubmittedDate = React.createRef();
-        // this.inputRemarks = React.createRef();
     }
-    public componentDidMount() {
+    public async componentDidMount() {
        showLoader();
         this.getEstimationsListData();
+        
           if (this.props.match.params.id != undefined) { 
-            //  const inputEl = document.querySelector<HTMLInputElement>('input[name="Hours"]');
-            //      inputEl?.focus();
-            // document.getElementById("txtHours")?.focus();
+
             this.inputHours.current.focus();
-              this.setState({ isEditMode: false });       
+          
              this.setState({ isEditMode: true });
              let ItemID = this.props.match.params.id
-             this.getOnclickdata(ItemID);
-                
-
-         
+             await this.getOnclickdata(ItemID);
           }
           else{
              this.setState({ isEditMode: false });
-             document.getElementById("newProject")?.focus();
+              setTimeout(() => {
+    document.getElementById("newProject")?.focus();
+     }, 200);
              this.getCurrentUserGroups();
 
           }
@@ -192,18 +185,20 @@ class Estimation extends React.Component<IEstimationsProps, IEstimationsState> {
           })
 
           this.fetchClientNames();
-          this.fetchBulkProposalValues(Response.BulkProposal);
-          hideLoader();
+          // this.fetchBulkProposalValues(Response.BulkProposal);
+          
           })
               let files= await sp.web.lists.getByTitle('EstimationsDocs').items.filter('RecordID eq ' + ItemID).expand('File').get()
              let filesArry: { URL: any; IsDeleted: boolean; IsNew: boolean; name: any; FileID: any; }[] = [];
             files.map((selItem:any, index:any) => {
                 let name = selItem.File.Name;
                 var fileUrl = selItem.File.ServerRelativeUrl;
-                let obj = { URL: fileUrl, IsDeleted: false, IsNew: false, name:name, FileID: selItem.Id };
+                const fileNameWithoutPrefix = name.replace(/^\d+_NSR_/, '');
+                let obj = { URL: fileUrl, IsDeleted: false, IsNew: false, name:fileNameWithoutPrefix, FileID: selItem.Id };
                 filesArry.push(obj);
             });
             this.setState({fileArr:filesArry})
+            hideLoader();
      }
    
    fetchClientNames() {
@@ -221,15 +216,20 @@ class Estimation extends React.Component<IEstimationsProps, IEstimationsState> {
         this.setState({ ClientNames });
       });
   }
-
-private addBrowserwrtServer(date:Date) {
-        // if (date != '') {
-            var utcOffsetMinutes = date.getTimezoneOffset();
-            var newDate = new Date(date.getTime());
-            newDate.setTime(newDate.getTime() + ((this.props.spContext.webTimeZoneData.Bias - utcOffsetMinutes + this.props.spContext.webTimeZoneData.DaylightBias) * 60 * 1000));
-            return newDate;
-        // }
-    }
+  // private addBrowserwrtServer(date: Date, webTimeZoneData: any) {
+  //   var utcOffsetMinutes = date.getTimezoneOffset();
+  //   var newDate = new Date(date.getTime());
+  //   newDate.setTime(newDate.getTime() + ((webTimeZoneData.Bias - utcOffsetMinutes + webTimeZoneData.DaylightBias) * 60 * 1000));
+  //   return newDate;
+  // }
+// private addBrowserwrtServer(date:Date) {
+//         // if (date != '') {
+//             var utcOffsetMinutes = date.getTimezoneOffset();
+//             var newDate = new Date(date.getTime());
+//             newDate.setTime(newDate.getTime() + ((this.props.spContext.webTimeZoneData.Bias - utcOffsetMinutes + this.props.spContext.webTimeZoneData.DaylightBias) * 60 * 1000));
+//             return newDate;
+//         // }
+//     }
 
  
 //  private fetchBulkProposalValues(bulkProposal: any) {
@@ -253,32 +253,32 @@ private addBrowserwrtServer(date:Date) {
 //     });
 //  }
 
-private fetchBulkProposalValues(bulkProposal: any) {
-    sp.web.lists.getByTitle('ProposalDetails')
-        .items
-        .filter(`ID eq '${bulkProposal}'`)
-        .select('Proposal', 'ID')
-        .get()
-        .then((Response: any[]) => {
-            console.log(Response);
+// private fetchBulkProposalValues(bulkProposal: any) {
+//     sp.web.lists.getByTitle('ProposalDetails')
+//         .items
+//         .filter(`ID eq '${bulkProposal}'`)
+//         .select('Proposal', 'ID')
+//         .get()
+//         .then((Response: any[]) => {
+//             console.log(Response);
 
-            // Build options directly from the response
-            const BulkProposalOptions = Response.map(item => ({
-                label: item.Proposal,
-                value: item.Proposal,
-                id: item.ID
-            }));
+//             // Build options directly from the response
+//             const BulkProposalOptions = Response.map(item => ({
+//                 label: item.Proposal,
+//                 value: item.Proposal,
+//                 id: item.ID
+//             }));
 
-            this.setState({ BulkProposals: BulkProposalOptions }, () => {
-                const selectedProposal = BulkProposalOptions.find(option => option.id === parseInt(bulkProposal));
-                if (selectedProposal) {
-                    this.setState({ BulkProposal: selectedProposal.value });
-                } else {
-                    this.setState({ BulkProposal: '' });
-                }
-            });
-        });
-}
+//             this.setState({ BulkProposals: BulkProposalOptions }, () => {
+//                 const selectedProposal = BulkProposalOptions.find(option => option.id === parseInt(bulkProposal));
+//                 if (selectedProposal) {
+//                     this.setState({ BulkProposal: selectedProposal.value });
+//                 } else {
+//                     this.setState({ BulkProposal: '' });
+//                 }
+//             });
+//         });
+// }
 
 
 
@@ -290,26 +290,29 @@ private fetchBulkProposalValues(bulkProposal: any) {
   //   this.setState(obj);
   // }
 
+
   private SubmitData=async (action: 'save' | 'submit')=>{
              showLoader();
+             const projectType=this.state.isExistingProject?ControlType.reactSelect:ControlType.string;
+             const projectFocusId=this.state.isExistingProject?'ProjectName':this.ProjectName;
      let data={
-          location: { val: this.state.Location, required: true, Name: 'Location', Type: ControlType.string, Focusid: this.inputLocation },
-          ClientName: { val: this.state.ClientName, required: true, Name: 'Client Name', Type: ControlType.reactSelect, Focusid:'Client' },
-          Project: { val: this.state.ProjectName, required: true, Name: 'Title of the Project', Type: ControlType.string, Focusid: this.ProjectName },
-          EstimatedHours:{ val: this.state.Hours, required: true, Name: 'Estimated Hours', Type: ControlType.string, Focusid: this.inputHours },
-          Estimationsfor:{ val: this.state.Estimation, required: true, Name: 'Estimations For', Type: ControlType.string, Focusid: this.inputEstimation },
-          TitleofEstimation:{ val: this.state.Title, required: true, Name: 'Title of the Estimation', Type: ControlType.string, Focusid: this.inputTitle },
-          SubmittedDate:{ val: this.state.SubmittedDate, required: true, Name: 'Submitted Date', Type: ControlType.date, Focusid: 'DivSubmittedDate'},
+          location: { val: this.state.Location, required: true, Name: "'Location'", Type: ControlType.string, Focusid: this.inputLocation },
+          ClientName: { val: this.state.ClientName, required: true, Name: "'Client Name'", Type: ControlType.reactSelect, Focusid:'Client' },
+          Project: { val: this.state.ProjectName.trim(), required: true, Name: "'Title of the Project'", Type:projectType, Focusid:projectFocusId },
+          EstimatedHours:{ val: this.state.Hours, required: true, Name: "'Estimated Hours'", Type: ControlType.string, Focusid: this.inputHours },
+          Estimationsfor:{ val: this.state.Estimation, required: true, Name: "'Estimations For'", Type: ControlType.string, Focusid: this.inputEstimation },
+          TitleofEstimation:{ val: this.state.Title.trim(), required: true, Name: "'Title of the Estimation'", Type: ControlType.string, Focusid: this.inputTitle },
+          SubmittedDate:{ val: this.state.SubmittedDate, required: true, Name: "'Submitted Date'", Type: ControlType.date, Focusid: 'DivSubmittedDate'},
           // Reason:{ val: this.state.Remarks, required: true, Name: 'Reason', Type: ControlType.string, Focusid: this.inputRemarks},
           Attachment:{ val: this.state.fileArr, required: true,Name:'', Type: ControlType.file}
      }
       
       let isValid = formValidation.checkValidations(data);
-       
-       var formdata={
+  
+       var formdata:any={
           ClientNameId:parseInt(this.state.ClientName),
           GDCOrOnsite:this.state.Location,
-          TitleOfTheProject:this.state.ProjectName,
+          TitleOfTheProject:this.state.ProjectName.trim(),
           EstimatedHour:this.state.Hours,
           EstimationFor:this.state.Estimation,
           TitleoftheEstimation:this.state.Title,
@@ -321,12 +324,22 @@ private fetchBulkProposalValues(bulkProposal: any) {
           EstimationStatus:action == 'save' ? 'In-Draft':'Submitted',
           History:JSON.stringify(this.state.History)
   }
- formdata.SubmittedDate = this.addBrowserwrtServer( new Date(DateUtilities.getDateMMDDYYYY(formdata.SubmittedDate))).toISOString() as unknown as null;
+   // Get the date user picked
+const userDate = new Date(DateUtilities.getDateMMDDYYYY(formdata.SubmittedDate));
+userDate.setMinutes(userDate.getMinutes() - userDate.getTimezoneOffset());
+formdata.SubmittedDate = userDate.toISOString().split('Z')[0];
+
+
+
+
+//  formdata.SubmittedDate = this.addBrowserwrtServer( new Date(DateUtilities.getDateMMDDYYYY(formdata.SubmittedDate))).toISOString() as unknown as null;
+ 
 
   if(isValid.status){
       try{
+         
        await this.checkDuplicates(formdata);
-                 this.state.History.push({"EstimationTitle": formdata.TitleoftheEstimation,"Project": formdata.TitleOfTheProject, "Status": formdata.EstimationStatus,"EstimationHour":formdata.EstimatedHour, "CreatedOn":new Date().toLocaleString('en-GB',{hour12:false})})
+      this.state.History.push({"EstimationTitle": formdata.TitleoftheEstimation,"Project": formdata.TitleOfTheProject, "Status": formdata.EstimationStatus,"EstimationHour":formdata.EstimatedHour, "CreatedOn":new Date().toLocaleString('en-GB',{hour12:false})})
       formdata['History']=JSON.stringify(this.state.History);
       }catch(e){
         console.log("Error in Submiting the data",e)
@@ -342,6 +355,7 @@ private fetchBulkProposalValues(bulkProposal: any) {
 
 
 }
+
 handleNumericChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   let value = e.target.value;
   // Allow only digits
@@ -360,13 +374,14 @@ private  async AddorUpdatelistItem(ItemID:number){
     newFileArry=this.state.fileArr.filter((file:any)=>{
       return file.IsNew == true; 
     })
-     this.deleteListItem();
+      await this.deleteListItem();
         if (newFileArry.length > 0) {0
             for (const i in newFileArry) {
                 let file:any = newFileArry[i];
                 let siteAbsoluteURL = this.props.context.pageContext.web.serverRelativeUrl;
-         await sp.web.getFolderByServerRelativeUrl(siteAbsoluteURL + "/EstimationsDocs").files.add(file.name, file, true);
-                const item1 =  await sp.web.getFileByServerRelativePath(siteAbsoluteURL + "/EstimationsDocs/" + file.name).getItem();
+                let fileName = `${ItemID}_NSR_${file.name}`; 
+         await sp.web.getFolderByServerRelativeUrl(siteAbsoluteURL + "/EstimationsDocs").files.add(fileName, file, true);
+                const item1 =  await sp.web.getFileByServerRelativePath(siteAbsoluteURL + "/EstimationsDocs/" + fileName).getItem();
 
                  item1.update({
                     RecordID: ItemID
@@ -460,7 +475,10 @@ private  async AddorUpdatelistItem(ItemID:number){
       userClients = masterClientData.filter(c =>
         c.SalesPerson.includes(userEmail)
       );
-      userLoc = Array.from(new Set(userClients.map(c => c.Location))); ;
+      userLoc = Array.from(new Set(userClients.map(c => c.Location)));
+       if (userLoc.length === 0) {
+          this.setState({ islocationconfigured: false });
+        }
     }
 
     this.setState({
@@ -468,12 +486,12 @@ private  async AddorUpdatelistItem(ItemID:number){
                  label: item,
                  value: item
                })).filter(item => item.label !=='').sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })),
-      loading: false,
       Location: userLoc.length === 1 ? userLoc[0] : '',
       isdevonly: isOnlyDev,
       isSalesonly: isOnlySales,
   
     });
+    hideLoader();
       if(userLoc.length === 1){
         this.fetchClientsBasedOnLocation(userLoc[0]);
       }
@@ -483,31 +501,47 @@ private  async AddorUpdatelistItem(ItemID:number){
     }
   }
 
-
-private deleteListItem(){
-  let list=sp.web.lists.getByTitle("EstimationsDocs");
-  if(this.state.delfileArr.length>0){
-  this.state.delfileArr.map((selItem, index) => {
-                let itemId = selItem['FileID'];
-              list.items.getById(itemId).delete();
-            });
-  }
+private async deleteListItem() {
+    const list = sp.web.lists.getByTitle("EstimationsDocs");
+    if (this.state.delfileArr.length > 0) {
+        // Use a for...of loop to delete files sequentially
+        for (const selItem of this.state.delfileArr) {
+            const itemId = selItem['FileID'];
+            try {
+                await list.items.getById(itemId).delete();
+                console.log(`File with ID ${itemId} deleted successfully.`);
+            } catch (error) {
+                console.error(`Error deleting file with ID ${itemId}:`, error);
+            }
+        }
+    }
 }
+
+// private deleteListItem(){
+//   let list=sp.web.lists.getByTitle("EstimationsDocs");
+//   if(this.state.delfileArr.length>0){
+//   this.state.delfileArr.map((selItem, index) => {
+//                 let itemId = selItem['FileID'];
+//               list.items.getById(itemId).delete();
+//             });
+//   }
+// }
 
   private checkDuplicates = async (formData:any) => 
     {
     let TrList = 'Estimations';
+    formData.TitleoftheEstimation=formData.TitleoftheEstimation.trim();
     var filterString;
     try {
       if (this.state.ItemID == 0)
-        filterString = `ClientNameId eq '${formData.ClientNameId}' and TitleoftheEstimation eq '${formData.TitleoftheEstimation}'`;
+        filterString = `ClientNameId eq '${formData.ClientNameId}' and TitleoftheEstimation eq '${formData.TitleoftheEstimation}' and Status ne 'Rejected'`;
       else
-        filterString = `ClientNameId eq '${formData.ClientNameId}' and TitleoftheEstimation eq '${formData.TitleoftheEstimation}' and Id ne ${this.state.ItemID}`;
-      await sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
+        filterString = `ClientNameId eq '${formData.ClientNameId}' and TitleoftheEstimation eq '${formData.TitleoftheEstimation}' and Status ne 'Rejected' and Id ne ${this.state.ItemID}`;
+       sp.web.lists.getByTitle(TrList).items.filter(filterString).get().
         then(async (response: any[]) => {
           if (response.length > 0){
                 showToast('error',"Duplicate 'Title of the Estimation' not accepted/Proposal for this Item is alreday Approved or Rejected" );
-                this.setState({loading:false})
+               hideLoader();
           }
             // this.setState({ errorMessage: "Duplicate 'Title of the Estimation' not accepted/Proposal for this Item is alreday Approved or Rejected" });
           else{
@@ -522,9 +556,7 @@ private deleteListItem(){
       this.onError();
       console.log(e);
     }
-    finally{
-      hideLoader();
-    }
+   
     // return findduplicates
   }
 
@@ -532,8 +564,9 @@ private deleteListItem(){
 
   private insertorupdateListitem = async (formData:any) => {
     this.setState({ loading: true });
+    formData.TitleoftheEstimation=formData.TitleoftheEstimation.trim();
     try{
-       showLoader();
+        showLoader();
       if (this.state.ItemID == 0) { 
       
        await sp.web.lists.getByTitle('Estimations').items.add(formData)
@@ -568,7 +601,7 @@ private deleteListItem(){
     }catch(e){
       console.log("Error in Uploading the data",e)
     }finally{
-      hideLoader();
+    
     }
   }
   private handleCancel = () => {
@@ -592,7 +625,7 @@ private deleteListItem(){
   }
    private onError = () => {
     showToast('error', 'Sorry! something went wrong');
-    this.setState({showHideModal: true, loading: false,addNewProgram:false, isSuccess: true, ItemID: 0,errorMessage: "" });
+    this.setState({showHideModal: false, loading: false,addNewProgram:false, isSuccess: true, ItemID: 0,errorMessage: "" });
     
   }
     
@@ -605,13 +638,29 @@ private deleteListItem(){
           <td>{item.Project}</td>
           <td>{item.Status}</td>
           <td>{item.EstimationHour}</td>
-          <td>{item.CreatedOn}</td>
+          <td>{this.formatDDMMYYYYToMMDDYYYY(item.CreatedOn)}</td>
         </tr>
       );
     });
     return rows;
      
   }
+formatDDMMYYYYToMMDDYYYY(datetime: string) {
+  if (!datetime) return "Invalid Date";
+
+  // Split date and time
+  const [datePart, timePart] = datetime.split(", ");
+
+  if (!datePart || !timePart) return "Invalid Date";
+
+  // Split the date part into day, month, and year
+  const [day, month, year] = datePart.split("/");
+
+  if (!day || !month || !year) return "Invalid Date";
+
+  // Return the formatted MM/DD/YYYY with time unchanged
+  return `${month}/${day}/${year}`;
+}
     private handleonBlur = (event:any) => {
         let returnObj: Record<string, any> = {};
         if (event.target.name != 'IsActive')
@@ -663,7 +712,7 @@ private deleteListItem(){
        
     
 
-private handleChangeClient = (event: any, actionMeta?: any) => {
+private handleChangeClient = async (event: any, actionMeta?: any) => {
     let returnObj: any = {};
     let name: string | undefined;
     let value: any;
@@ -679,19 +728,22 @@ private handleChangeClient = (event: any, actionMeta?: any) => {
     }
 
     if (name !== undefined) {
+        if (name === 'ClientName') {
+            this.setState({ ProjectName: '', ProjectNames: [] });
+        }
         returnObj[name] = value;
         this.setState(returnObj);
 
         if (name === 'ClientName' && label !== undefined) {
-            this.fetchProjectBasedOnClient(label);
-            this.fetchBulkProposals(label);
+           await this.fetchProjectBasedOnClient(label);
+            await this.fetchBulkProposals(label);
         }
     }
 };
 
 private fetchBulkProposals = (selectedClient: string) => {
    try{
-    sp.web.lists.getByTitle('ProposalDetails').items.filter(`ClientName eq '${selectedClient}' and IsBulkProposal eq 1`).select('Proposal').get().then((Response: any[]) => {
+    sp.web.lists.getByTitle('ProposalDetails').items.filter(`ClientName eq '${selectedClient}' and IsBulkProposal eq 1`).select('Proposal').top(2000).get().then((Response: any[]) => {
         console.log(Response);
         let uniqueProposals = Array.from(new Set(Response.map(item => item.Proposal))); 
         const BulkProposalOptions = uniqueProposals.map(Proposal => ({
@@ -731,11 +783,13 @@ private fetchBulkProposals = (selectedClient: string) => {
     this.setState({ SubmittedDate: date[0] });
   };
 private fetchProjectBasedOnClient = (selectedClient: string) => {
+  try{
+      showLoader();
   const TrList = 'Estimations';
 
   sp.web.lists.getByTitle(TrList).items
     .filter(`ClientName/Title eq '${selectedClient}'`).expand('ClientName')
-    .select('TitleOfTheProject', 'Id','ClientName/Title')
+    .select('TitleOfTheProject', 'Id','ClientName/Title').top(2000)
     .get()
     .then((Response: any[]) => {
       // Create a Map to ensure uniqueness by Title
@@ -753,6 +807,11 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
       const ProjectOptions = Array.from(uniqueProjectsMap.values());
       this.setState({ ProjectNames: ProjectOptions });
     });
+  }catch(e){
+    console.log("Error in fetching Projects",e)
+  }finally{
+    hideLoader();
+  }
 }
 
       private handleChange1 = (event:any) => {
@@ -777,6 +836,7 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
 
  private fetchClientsBasedOnLocation = async (selectedLocation: string) => {
   try {
+    showLoader();
     const TrList = "Clients";
       const currentUser = await sp.web.currentUser.get();
     const userEmail = currentUser.Email;
@@ -794,13 +854,13 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
       .items
       .filter(filterQuery)
       .select("Id", "Title", "Sales_x0020_Person_x0020_Name/EMail", "Alternate_x0020_Sales_x0020_Pers/EMail")
-      .expand("Sales_x0020_Person_x0020_Name", "Alternate_x0020_Sales_x0020_Pers")
+      .expand("Sales_x0020_Person_x0020_Name", "Alternate_x0020_Sales_x0020_Pers").top(2000)
       .get();
 
     const clientOptions = response.map(item => ({
       label: item.Title,
       value: item.Id
-    }));
+    })).sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 
     this.setState({
       ClientNames: clientOptions,
@@ -809,6 +869,8 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
 
   } catch (err) {
     console.error("Error fetching clients:", err);
+  }finally{
+    hideLoader();
   }
 };
 
@@ -857,9 +919,9 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
     hamburgericon[0]?.classList.add("d-none");
     navBar[0]?.classList.add("d-none");
     return (
-      <div className='noConfiguration'>
+      <div className='noConfiguration w-100'>
         <div className='ImgUnLink'><img src={Icons.unLink} alt="" className='' /></div>
-        <b>You are not configured in Billing Team Matrix.</b>Please contact Administrator.
+        <b>You are not configured in Masters.</b>Please contact Administrator.
       </div>
     );
   }
@@ -867,6 +929,29 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
 
 
 
+
+private handleChangeProject = (event: any, actionMeta?: any) => {
+    let returnObj: any = {};
+    let name: string | undefined;
+    let value: any;
+
+    if (event && event.target) {
+        name = event.target.name;
+        value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+    } else if (actionMeta && actionMeta.name) {
+        name = actionMeta.name;
+        value = actionMeta.action === 'clear' ? '' : event?.value;
+    }
+
+    if (name !== undefined) {
+        returnObj[name] = value;
+
+      //  const isExisting = this.state.ProjectNames.some(
+      // (project: any) => project.label === value
+      // );
+        this.setState({ ...returnObj });
+    }
+};
 
 
     private getEstimationsListData=async () => {
@@ -884,7 +969,7 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
                })) .filter(item => item.label !=='').sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
               
                this.setState({Locations: locationOptions});
-               hideLoader();
+              //  hideLoader();
              }
              );
              
@@ -901,10 +986,11 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
                loading: false,
                modalTitle: 'Error',
                modalText: 'Sorry! something went wrong',
-               showHideModal: true,
+               showHideModal: false,
                isSuccess: false
              });
              console.log('failed to fetch data');
+             showToast('error','Sorry! something went wrong');
            }
            
          }
@@ -948,17 +1034,17 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
                      {!this.state.isEditMode && (
                   <div className="row pt-2 px-2"> 
                   <div className="col-md-4">  
-                       <input type='radio' name='IsActive' id='newProject' checked={!this.state.isExistingProject} onChange={()=>this.setState({isExistingProject:false,ProjectNames:[],ProjectName:'',ClientName:'',Hours:'',Estimation:''})} /> <label htmlFor='newProject'>New Project </label>
+                       <input type='radio' name='IsActive' id='newProject' className='mb-2' tabIndex={0} checked={!this.state.isExistingProject} onChange={()=>this.setState({isExistingProject:false,ProjectNames:[],ProjectName:'',ClientName:'',Hours:'',Estimation:''})} /> <label htmlFor='newProject'>New Project </label>
                        </div>
                         <div className="col-md-3">
-                        <input type='radio' name='IsActive' id='existingProject' checked={this.state.isExistingProject} onChange={()=>this.setState({isExistingProject:true,ProjectNames:[],ProjectName:'',ClientName:'',Estimation:'',Hours:''})}  /> <label htmlFor='existingProject'>Existing Project</label>
+                        <input type='radio' name='IsActive' className='mb-2' id='existingProject' tabIndex={0} checked={this.state.isExistingProject} onChange={()=>this.setState({isExistingProject:true,ProjectNames:[],ProjectName:'',ClientName:'',Estimation:'',Hours:''})}  /> <label htmlFor='existingProject'>Existing Project</label>
                         </div>
                     </div>
                      )}
                   <div className="row pt-2 px-2">      
                   <div className="col-md-3">
                                                             <div className="light-text">
-                                                               <label className="z-in-9">Location <span className="mandatoryhastrick">*</span></label>
+                                                               <label className="">Location <span className="mandatoryhastrick">*</span></label>
                                                                 <select className="form-control" required={true} name="Location" value={this.state.Location} title="Location" onChange={this.handleChange} disabled={this.state.isEditMode || this.state.Locations.length === 1} itemRef='Location' ref={this.inputLocation}>
                                                                     <option value=''>None</option>
                                                                     
@@ -972,37 +1058,13 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
                 <div className="col-md-3">
                     <div className="light-text">
                         <label >Client Name<span className="mandatoryhastrick">*</span></label>
-                        {/* <select className="form-control" required={true} name="ClientName" value={this.state.ClientName} title="Client Name" onChange={this.handleChangeClient} disabled={this.state.isEditMode} itemRef='ClientName' ref={this.inputClientName}>
-                            <option value=''>None</option>
-                            {this.state.ClientNames.map((Clientname:any, index:any) => (
-                                <option key={index} value={Clientname.value}>{Clientname.label}</option>
-                            ))}
-                        
-                        </select> */}
                                <div className="custom-dropdown">
-                                                <SearchableDropdown label="Client Name" Title="ClientName" name="ClientName" id="Client" placeholderText="Select Client" disabled={this.state.isEditMode} className="" selectedValue={this.state.ClientName} optionLabel={'label'} optionValue={'value'} OptionsList={this.state.ClientNames} onChange={(selectedOption:any, actionMeta:any) => { this.handleChangeClient(selectedOption, actionMeta) }} isRequired={true} refElement={this.inputClientName} noOptionsMessage="No Client"></SearchableDropdown>
-
+                                                <SearchableDropdown label="Client Name" Title="ClientName" name="ClientName" id="Client" placeholderText="None" disabled={this.state.isEditMode} className="" selectedValue={this.state.ClientName} optionLabel={'label'} optionValue={'value'} OptionsList={this.state.ClientNames} onChange={(selectedOption:any, actionMeta:any) => { this.handleChangeClient(selectedOption, actionMeta) }} isRequired={true} refElement={this.inputClientName} noOptionsMessage="None"></SearchableDropdown>
                            
                           </div>
                     </div>
                 </div>
-                       {/* {this.state.IsBulkProposal && (
-                      <div className="col-md-3">
-                  <div className="light-text">
-                    <label >Bulk Proposal<span className="mandatoryhastrick"></span></label>
-                   
-                      <select className="form-control" required={true} name="BulkProposal" value={this.state.BulkProposal} onChange={this.handleIsBulk} title="BulkProposal" itemRef='BulkProposal' ref={this.inputBulkProposal}>
-                        <option value=''>None</option>
-                        {this.state.BulkProposals.map((BulkProposal: any, index: any) => (
-                          <option key={index} value={BulkProposal.label}>{BulkProposal.label}</option>
-                        ))}
-
-                      </select>
-
-                
-                  </div>
-                </div>
-                      )} */}
+                    
                 <div className="col-md-3">
                 {!this.state.isExistingProject ? (
   <InputText
@@ -1020,22 +1082,9 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
 ) : (
   <div className="light-text">
     <label>Title of the Project <span className="mandatoryhastrick">*</span></label>
-    <select
-      className="form-control"
-      required
-      name="ProjectName"
-      onChange={this.handleChange1}
-      disabled={this.state.isEditMode}
-      value={this.state.ProjectName}
-      itemRef='ProjectName'
-      ref={this.ProjectName}
-      
-    >
-      <option value=''>None</option>
-      {this.state.ProjectNames.map((est: any, index: number) => (
-        <option key={index} value={est.label}>{est.label}</option>
-      ))}
-    </select>
+        <div className="custom-dropdown">
+               <SearchableDropdown label="Title of the Project" Title="Title of the Project" name="ProjectName" id="ProjectName" placeholderText="None" disabled={this.state.isEditMode} className="" selectedValue={this.state.ProjectName} optionLabel={'label'} optionValue={'label'} OptionsList={this.state.ProjectNames}  onChange={(selectedOption:any, actionMeta:any) => { this.handleChangeProject(selectedOption, actionMeta) }} isRequired={true} refElement={this.ProjectName} noOptionsMessage="None"></SearchableDropdown>
+                 </div>
   </div>
 )}
 
@@ -1080,7 +1129,7 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
                     </div>
                             <div className="col-md-3 my-2">
                                             <div className="light-text div-readonly">
-                                                <label className="z-in-9">Submitted Date<span className="mandatoryhastrick">*</span></label>
+                                                <label className="">Submitted Date<span className="mandatoryhastrick">*</span></label>
                                                 <div className="custom-datepicker" id="DivSubmittedDate">
                                                   <DatePicker onDatechange={this.handleDateChange} ref={this.inputSubmittedDate}  endDate={new Date()} selectedDate={this.state.SubmittedDate} placeholder="MM/DD/YYYY" maxDate={new Date()} id={'txtSubmitteddate'} title={"Submitted Date"}/>
                                                 </div>
@@ -1100,8 +1149,8 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
                       </div>
                       <div className="row pt-2 px-2">   
                       <div className="col-md-12">
-            
-                                                     <FileUpload ismultiAllowed={true} onFileChanges={this.filesChanged} isnewForm={!this.state.DynamicDisabled} files={[this.state.fileArr, this.state.delfileArr]} />
+                        
+                                                     <FileUpload ismultiAllowed={true} isMandatory={true} onFileChanges={this.filesChanged} isnewForm={!this.state.DynamicDisabled} files={[this.state.fileArr, this.state.delfileArr]} />
                                             </div>
                         </div>
                         
@@ -1133,7 +1182,7 @@ private fetchProjectBasedOnClient = (selectedClient: string) => {
                                                             <th>Estimation Title</th>
                                                             <th>Project</th>
                                                             <th>Status</th>
-                                                            <th>Estimation Hour </th>
+                                                            <th>Estimation Hours </th>
                                                             <th>Created On </th>
                                                         </tr>
                                                     </thead>
