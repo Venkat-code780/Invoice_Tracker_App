@@ -280,16 +280,16 @@ class ProjectStatus extends React.Component<ProjectStatusViewProps, ProjectStatu
     const selectedYear = e.target.value;
     this.setState({ selectedYear });
      setTimeout(() => {
-    if (selectedYear === '') {
-      // If no year is selected, reset to show all data
-      this.setState({ data: this.state.allData });
-    } else {
+    // if (selectedYear === '') {
+    //   // If no year is selected, reset to show all data
+    //   this.setState({ data: this.state.allData });
+    // } else {
       // Filter data based on the selected year
       const filteredData = this.state.allData.filter(
-        (item: { Created: string }) => new Date(item.Created).getFullYear().toString() === selectedYear
+        (item: { EndDate: string }) => new Date(item.EndDate).getFullYear().toString() === selectedYear
       );
       this.setState({ data: filteredData });
-    }
+    // }
     hideLoader();
   }, 100); // Simulate a delay for loading effect
   };
@@ -315,7 +315,11 @@ class ProjectStatus extends React.Component<ProjectStatusViewProps, ProjectStatu
       });
     });
     const allYears = this.getYears(response);
-    this.setState({ data: data, allYears: allYears, allData: data, SaveUpdateText: 'Submit' });
+      const selectedYear = allYears[0].toString();
+        const filteredData = selectedYear
+        ? data.filter((item: { EndDate: string }) => new Date(item.EndDate).getFullYear().toString() === selectedYear)
+        : data;
+    this.setState({ data: filteredData, allYears: allYears, allData: data, SaveUpdateText: 'Submit' });
     hideLoader();
   }
   private handleRowClicked = (row: any, Id?: any) => {
@@ -538,11 +542,17 @@ class ProjectStatus extends React.Component<ProjectStatusViewProps, ProjectStatu
         name: "Start Date",
         selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.StartDate),
         sortable: true,
+           sortFunction: (a: any, b: any) =>
+              new Date(a.StartDate).getTime() -
+              new Date(b.StartDate).getTime()
       },
       {
         name: "End Date",
         selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.EndDate),
         sortable: true,
+         sortFunction: (a: any, b: any) =>
+              new Date(a.EndDate).getTime() -
+              new Date(b.EndDate).getTime()
       },
       {
         name: "Project Status",
@@ -558,6 +568,9 @@ class ProjectStatus extends React.Component<ProjectStatusViewProps, ProjectStatu
         name: "Created Date",
         selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.Created),
         sortable: true,
+                 sortFunction: (a: any, b: any) =>
+              new Date(a.Created).getTime() -
+              new Date(b.Created).getTime()
       },
 
 
@@ -592,7 +605,7 @@ class ProjectStatus extends React.Component<ProjectStatusViewProps, ProjectStatu
                     <div className="light-text mt-3 mb-2">
                       <label color='#0b3e50'>Year</label>
                       <select className="form-control" id='ddlsearch' required={true} name="selectedYear" value={this.state.selectedYear} title="selectedYear" onChange={this.handleYearChange}>
-                        <option value=''>All</option>
+             
                         {this.state.allYears.map((year: any) => {
                           return (
                             <option key={year} value={year}>

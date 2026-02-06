@@ -3,14 +3,18 @@
   "id": "9b515eaf-6d08-46fe-a667-1504e455f601",
   "alias": "InvoiceWebPart",
   "componentType": "WebPart",
+
+
   "version": "*",
   "manifestVersion": 2,
+
+
   "requiresCustomScript": false,
   "supportedHosts": ["SharePointWebPart", "TeamsPersonalApp", "TeamsTab", "SharePointFullPage"],
   "supportsThemeVariants": true,
 
   "preconfiguredEntries": [{
-    "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
+    "groupId": "5c03119e-3074-46fd-976b-c60198311f70", 
     "group": { "default": "Advanced" },
     "title": { "default": "Invoice - Prod" },
     "description": { "default": "Invoice description" },

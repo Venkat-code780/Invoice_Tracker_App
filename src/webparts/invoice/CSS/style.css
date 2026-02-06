@@ -2686,3 +2686,23 @@ button.SubmitButtons:focus-visible {
 .accordion-collapse {
   transition: height 0.35s ease;
 } */
+
+.tab-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.tab-header button {
+    padding: 8px 16px;
+    border: 1px solid #ccc;
+    background: #f4f4f4;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.tab-header .active-tab {
+    background: #0078d4;
+    color: white;
+    border-color: #0078d4;
+}

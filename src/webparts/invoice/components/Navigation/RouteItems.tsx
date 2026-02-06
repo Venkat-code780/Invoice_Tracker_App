@@ -17,6 +17,7 @@ import ProjectStatuspage from '../Forms/ProjectStatus';
 import InvoiceForm from '../Forms/InvoiceForm';
  import Dashboard from '../Dashboards/Dashboard';
  import Reports from '../Reports/Reports';
+ import NewDashboard from '../Dashboards/NewDashboard';
 
 
 export interface RoutesProps {
@@ -179,6 +180,11 @@ class Routesitems extends React.Component<RoutesProps, RoutesState> {
             return <Dashboard {...this.context}{...this.props} {...{...props,match: {params}}} />
           
         }
+        const NewDashboardWrapper=(props:any)=>{  
+            let params=useParams();
+            return <NewDashboard {...this.context}{...this.props} {...{...props,match: {params}}} />
+          
+        }
          const ReportsWrapper=(props:any)=>{  
             let params=useParams();
             return <Reports {...this.context}{...this.props} {...{...props,match: {params}}} />
@@ -190,6 +196,7 @@ class Routesitems extends React.Component<RoutesProps, RoutesState> {
         
             <Suspense fallback={<div></div>}>
              <Routes>
+                <Route path="/NewDashboard" element={<NewDashboardWrapper {...this.props} />} />
                 <Route path="/Client/:id?" element={<ClientWrapper {...this.props} />} />
                 <Route path="/Location/:id?" element={<LocationWrapper {...this.props} />} />
                 <Route path="/BillingTeam/:id?" element={<BillingTeamWrapper {...this.props} />} />

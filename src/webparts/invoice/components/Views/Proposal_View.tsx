@@ -123,16 +123,16 @@ export interface ProposalViewProps {
         const selectedYear = e.target.value;
         this.setState({ selectedYear });
         setTimeout(() => {
-        if (selectedYear === '') {
-          // If no year is selected, reset to show all data
-          this.setState({ data: this.state.allData });
-        } else {
+        // if (selectedYear === '') {
+        //   // If no year is selected, reset to show all data
+        //   this.setState({ data: this.state.allData });
+        // } else {
           // Filter data based on the selected year
           const filteredData = this.state.allData.filter(
             (item: { SubmittedDate: string }) => new Date(item.SubmittedDate).getFullYear().toString() === selectedYear
           );
           this.setState({ data: filteredData });
-        }
+        // }
         hideLoader();
       }, 100); // Simulate a delay for loading effect
       };
@@ -155,7 +155,11 @@ export interface ProposalViewProps {
           });
         });
         const allYears = this.getYears(response);
-        this.setState({ data: data,allYears:allYears,allData:data, SaveUpdateText: 'Submit' });
+          const selectedYear = allYears[0].toString();
+        const filteredData = selectedYear
+        ? data.filter((item: { SubmittedDate: string }) => new Date(item.SubmittedDate).getFullYear().toString() === selectedYear)
+        : data;
+        this.setState({ data: filteredData,allYears:allYears,allData:data, SaveUpdateText: 'Submit' });
           // hideLoader();
       }
   private configurationValidtion = () => {
@@ -360,6 +364,9 @@ export interface ProposalViewProps {
             name: "Submitted Date",
             selector: (row:any, i:any) =>DateUtilities.getDateMMDDYYYY(row.SubmittedDate),
             sortable: true,
+              sortFunction: (a: any, b: any) =>
+              new Date(a.SubmittedDate).getTime() -
+              new Date(b.SubmittedDate).getTime()
           },
          
           // {
@@ -397,6 +404,9 @@ export interface ProposalViewProps {
             name: "Created Date",
             selector: (row:any, i:any) =>DateUtilities.getDateMMDDYYYY(row.Created) ,
             sortable: true,
+                    sortFunction: (a: any, b: any) =>
+              new Date(a.Created).getTime() -
+              new Date(b.Created).getTime()
           },
         
        
@@ -432,7 +442,7 @@ export interface ProposalViewProps {
               <div className="light-text mt-3 mb-2">
                                                                <label color='#0b3e50'>Year</label>
                                                                 <select className="form-control" id='ddlsearch' required={true} name="selectedYear" value={this.state.selectedYear} title="selectedYear" onChange={this.handleYearChange}>
-                                                                    <option value=''>All</option>
+                                                              
                                                                     {this.state.allYears.map((year:any)=>{
                                                                       return(
                                                                      <option key={year} value={year}>

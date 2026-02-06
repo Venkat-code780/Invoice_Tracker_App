@@ -557,6 +557,7 @@ proposalTitleOri:''
       // this.setState({ errorMessage: isValid.message });
 
   }
+
   private checkDuplicates = (formData: any) => {
 
     let TrList = 'ProposalDetails';
@@ -1319,7 +1320,9 @@ private handleChangeTitleOfProject = (event: any, actionMeta?: any) => {
   };
 
   private BindComments = () => {
-    let rows = this.state.History.map((item, index) => {
+     let rows = [...this.state.History]
+    .reverse()
+    .map((item, index) => {
       const formattedAmount =
       item.Amount !== null &&
       item.Amount !== undefined &&
@@ -1328,7 +1331,7 @@ private handleChangeTitleOfProject = (event: any, actionMeta?: any) => {
         : item.Amount;
       return (
         <tr key={index}>
-          <td>{index + 1}</td>
+          {/* <td>{index + 1}</td> */}
           <td>{item.Project}</td>
           <td>{item.Proposal}</td>
           <td>{item["Estrimation Hour"]}</td>
@@ -1360,40 +1363,31 @@ formatDate(dateString: any) {
   return `${mm}/${dd}/${date.getFullYear()}`;
 }
 
- formatDDMMYYYYToMMDDYYYY(datetime: string): string {
+formatDDMMYYYYToMMDDYYYY(datetime: string): string {
   if (!datetime) return "Invalid Date";
 
-  // Split into date and optional time
-  const [datePart, timePart] = datetime.includes(",")
-    ? datetime.split(", ")
-    : [datetime, null];
+  const [datePart, timePart] = datetime.split(", ");
 
-  if (!datePart) return "Invalid Date";
+  const parts = datePart.split("/");
+  if (parts.length !== 3) return "Invalid Date";
 
-  const [part1, part2, year] = datePart.split("/");
+  const [dd, mm, yyyy] = parts.map(Number);
+  if (!dd || !mm || !yyyy) return "Invalid Date";
 
-  if (!part1 || !part2 || !year) return "Invalid Date";
+  // Create date explicitly as DD/MM/YYYY
+  const date = new Date(yyyy, mm - 1, dd);
 
-  const d = parseInt(part1, 10);
-  const m = parseInt(part2, 10);
-  const y = parseInt(year, 10);
+  if (isNaN(date.getTime())) return "Invalid Date";
 
-  if (isNaN(d) || isNaN(m) || isNaN(y)) return "Invalid Date";
+  const MM = String(date.getMonth() + 1).padStart(2, "0");
+  const DD = String(date.getDate()).padStart(2, "0");
+  const YYYY = date.getFullYear();
 
-  // Detect if input is already MM/DD/YYYY (month <= 12 and day <= 31)
-  const isAlreadyMMDDYYYY = m <= 31 && d <= 12;
+  const formatted = `${MM}/${DD}/${YYYY}`;
 
-  let formattedDate: string;
-  if (isAlreadyMMDDYYYY) {
-    // Keep as-is
-    formattedDate = `${part1}/${part2}/${year}`;
-  } else {
-    // Convert DD/MM/YYYY → MM/DD/YYYY
-    formattedDate = `${m}/${d}/${y}`;
-  }
-
-  return timePart ? `${formattedDate}, ${timePart}` : formattedDate;
+  return timePart ? `${formatted}, ${timePart}` : formatted;
 }
+
 
 
 
@@ -1682,7 +1676,7 @@ formatWithCommas = (value: string | number): string => {
                         <table className="table border mt-2">
                           <thead>
                             <tr>
-                              <th>Version</th>
+                              {/* <th>Version</th> */}
                               <th>Project</th>
                               <th>Proposal</th>
                               <th>Estimation Hours </th>

@@ -169,10 +169,56 @@ class PO extends React.Component<IPOProps, IPOState> {
     else {
       document.getElementById('ddlocation')?.focus();
       this.setState({ isEditMode: false });
+      const hash = window.location.hash; 
+      const queryString = hash.includes('?') ? hash.split('?')[1] : '';
+      const proposalId = new URLSearchParams(queryString).get('ProposalId');
+      if (proposalId) {
+        this.prefillFromProposal(Number(proposalId));
+      }
     }
 
 
   }
+  private async prefillFromProposal(proposalId: number) {
+  try {
+    showLoader();
+
+    const proposal = await sp.web.lists
+      .getByTitle("ProposalDetails")
+      .items.getById(proposalId)
+      .select(
+        "Id",
+        "Title",
+        "ClientName",
+        "ProposalFor",
+        "Amount",
+        "ClientID"
+      )
+      .get();
+
+    this.setState({
+      isEditMode: false,
+      ProposalId: proposal.Id,
+      ClientName: proposal.ClientName,
+      ClientId: proposal.ClientID,
+      Location: proposal.ProposalFor,
+      ProjectName: proposal.Title,
+      TitleoftheProposal: proposal.Title,
+      SaveUpdateText: "Submit"
+    });
+         
+    
+    // Populate dropdowns correctly
+    this.fetchClientsBasedOnLocation(proposal.ProposalFor, proposal.ClientName);
+    this.fetchProjetsbasedonClientName(proposal.ClientName, proposal.Title);
+
+    hideLoader();
+  } catch (error) {
+    console.error("Error loading proposal details", error);
+    hideLoader();
+  }
+}
+
     private async checkpermisssion(){
       try {
           const userGroups= await sp.web.currentUser.groups.get();

@@ -939,10 +939,13 @@ private handleinvoicenumber = (e:any) => {
     if (num === null || num === undefined || num === '') return '';
     return Number(num).toLocaleString('en-IN'); // 'en-IN' → Indian format (10,000)
   };
-    let rows = (this.state.History || []).map((item:any, index) => {
+    // let rows = (this.state.History || []).map((item:any, index) => {
+      let rows = [...(this.state.History || [])]
+    .reverse()
+    .map((item: any, index) => {
       return (
         <tr key={index}>
-          <td>{index + 1}</td>
+          {/* <td>{index + 1}</td> */}
           <td>{item.InvoiceNumber}</td>
           <td>{DateUtilities.getDateMMDDYYYY(item.SubmittedDate)}</td>
           <td>{this.state.currencySymbols}&nbsp;{formatWithCommas(item.AvailableBalance)}</td>
@@ -1394,7 +1397,7 @@ formatWithCommasInvoiced = (value: string | number): string => {
                         <table className="table border mt-2">
                           <thead>
                             <tr>
-                              <th>sl.No</th>
+                              {/* <th>sl.No</th> */}
                               <th>Invoice Number</th>
                               <th>Invoiced Date</th>
                               <th> Available Balance </th>

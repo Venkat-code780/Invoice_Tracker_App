@@ -74,7 +74,7 @@ class NavBar extends React.Component<any, INavBarState> {
 private setAccordionFromPath = () => {
   const path = this.props.router.location.pathname;
 
-  if (/^\/(Client|Location|BillingTeam)(\/.*)?$/.test(path)) {
+  if (/^\/(Client|Location|BillingTeam|NewDashboard)(\/.*)?$/.test(path)) {
     this.setState({ activeAccordion: 'masters' });
   } else if (/^\/(Estimation|Proposal|PO|ProjectStatus|InvoiceForm)(\/.*)?$/.test(path)) {
     this.setState({ activeAccordion: 'forms' });
@@ -140,6 +140,8 @@ private setAccordionFromPath = () => {
               </button>
               {activeAccordion === 'masters' && (
                 <ul className="submenu">
+                   <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/NewDashboard"> <img src={Icons.Client} height={18} width={18} className='nav-icons' >
+                  </img>New Dashboard</NavLink></li>
                   <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/Client"> <img src={Icons.Client} height={18} width={18} className='nav-icons' >
                   </img>Clients</NavLink></li>
                   <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/Location"> <img src={Icons.Location} height={18} width={18} className='nav-icons' >

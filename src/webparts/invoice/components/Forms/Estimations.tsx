@@ -630,10 +630,12 @@ private async deleteListItem() {
   }
     
   private BindComments=()=>{
-    let rows = this.state.History.map((item, index) => {
+      let rows = [...this.state.History]
+    .reverse()
+    .map((item, index) => {
       return (
         <tr key={index}>
-          <td>{index + 1}</td>
+          {/* <td>{index + 1}</td> */}
           <td>{item.EstimationTitle}</td>
           <td>{item.Project}</td>
           <td>{item.Status}</td>
@@ -1178,7 +1180,7 @@ private handleChangeProject = (event: any, actionMeta?: any) => {
                                                 <table className="table border mt-2">
                                                     <thead>
                                                         <tr>
-                                                            <th>Version</th>
+                                                            {/* <th>Version</th> */}
                                                             <th>Estimation Title</th>
                                                             <th>Project</th>
                                                             <th>Status</th>
