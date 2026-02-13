@@ -982,7 +982,18 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
 
   private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any) {
     const POList = 'PODetails';
-    sp.web.lists.getByTitle(POList).items.select("Id", "PONumber").filter(`ProjectTitle eq '${selectedproject}' and ClientName eq '${this.state.ClientName}'`).top(2000).get().then((Response: any[]) => {
+
+    let filterQuery = "";
+      if (this.state.isEditMode && selectedponumber) {
+    filterQuery = `ProjectTitle eq '${selectedproject}' 
+                   and ClientName eq '${this.state.ClientName}' 
+                   and (Status eq 'In-Progress' or PONumber eq '${selectedponumber}')`;
+  } else {
+    filterQuery = `ProjectTitle eq '${selectedproject}' 
+                   and ClientName eq '${this.state.ClientName}' 
+                   and Status eq 'In-Progress'`;
+  }
+    sp.web.lists.getByTitle(POList).items.select("Id", "PONumber").filter(filterQuery).top(2000).get().then((Response: any[]) => {
       const { isEditMode } = this.state;
       const PONumberoptions = Response.map(item => ({
         label: item.PONumber,

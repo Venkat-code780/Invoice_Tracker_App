@@ -74,7 +74,7 @@ class NavBar extends React.Component<any, INavBarState> {
 private setAccordionFromPath = () => {
   const path = this.props.router.location.pathname;
 
-  if (/^\/(Client|Location|BillingTeam|NewDashboard)(\/.*)?$/.test(path)) {
+  if (/^\/(Client|Location|BillingTeam)(\/.*)?$/.test(path)) {
     this.setState({ activeAccordion: 'masters' });
   } else if (/^\/(Estimation|Proposal|PO|ProjectStatus|InvoiceForm)(\/.*)?$/.test(path)) {
     this.setState({ activeAccordion: 'forms' });
@@ -82,7 +82,15 @@ private setAccordionFromPath = () => {
     this.setState({ activeAccordion: 'views' });
   } else if (/^\/Reports(\/.*)?$/.test(path)) {
     this.setState({ activeAccordion: 'reports' });
-  } else {
+  }
+  else if(path === '/')
+  {
+    this.setState({activeAccordion:'NewDashboard'});
+  }
+  else if (/^\/NewDashboard(\/.*)?$/.test(path)) {
+    this.setState({ activeAccordion: 'NewDashboard' });
+}
+   else {
     this.setState({ activeAccordion: null });
   }
 };
@@ -120,6 +128,7 @@ private setAccordionFromPath = () => {
     const showForms = isPAndIAdmin || isDevTeam || isSalesPerson || isBillingTeam;
     const showViews = showForms;
     const showReports = showForms;
+    const showDashboard = showForms;
     
 
     return (
@@ -130,6 +139,21 @@ private setAccordionFromPath = () => {
        {this.state.showSidebar && (
        <div className="sidebar">
         <ul className="left-nav nav-list">
+                   {showDashboard && (
+            <li className="accordion-item">
+              <button type='button' role='button'
+                className={`accordion-header ${activeAccordion === 'NewDashboard' ? 'active' : ''}`}
+                onClick={() => this.toggleAccordion('NewDashboard')}
+              >
+                 <img src={Icons.Reports} height={18} width={18}  className={`nav-icons ${activeAccordion === 'NewDashboard' ? 'icon-white' : ''}`} ></img> Home {activeAccordion === 'NewDashboard' ? <span className='span-angle-right'> <FontAwesomeIcon icon={faChevronDown}></FontAwesomeIcon></span>:<span className='span-angle-right'><FontAwesomeIcon icon={faAngleRight}></FontAwesomeIcon></span>}
+              </button>
+              {activeAccordion === 'NewDashboard' && (
+                <ul className="submenu">
+                  <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/NewDashboard"><img src={Icons.Reports} height={18} width={18} className='nav-icons' ></img> Dashboard</NavLink></li>
+                </ul>
+              )}
+            </li>
+          )}
           {isPAndIAdmin && (
             <li className="accordion-item">
               <button type='button' role='button' 
@@ -140,8 +164,8 @@ private setAccordionFromPath = () => {
               </button>
               {activeAccordion === 'masters' && (
                 <ul className="submenu">
-                   <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/NewDashboard"> <img src={Icons.Client} height={18} width={18} className='nav-icons' >
-                  </img>New Dashboard</NavLink></li>
+                   {/* <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/NewDashboard"> <img src={Icons.Client} height={18} width={18} className='nav-icons' >
+                  </img>New Dashboard</NavLink></li> */}
                   <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/Client"> <img src={Icons.Client} height={18} width={18} className='nav-icons' >
                   </img>Clients</NavLink></li>
                   <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/Location"> <img src={Icons.Location} height={18} width={18} className='nav-icons' >
@@ -208,6 +232,7 @@ private setAccordionFromPath = () => {
               )}
             </li>
           )}
+      
         </ul>
       </div>
        )}

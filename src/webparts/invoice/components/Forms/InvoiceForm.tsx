@@ -161,6 +161,12 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
     else {
       document.getElementById('ddllocation')?.focus();
       this.setState({ isEditMode: false,SubmittedEmail:[this.props.spContext.userEmail],SubmittedById:this.props.spContext.userId  });
+        const hash = window.location.hash;
+      const queryString = hash.includes('?') ? hash.split('?')[1] : '';
+      const POID = new URLSearchParams(queryString).get('POID');
+      if (POID) {
+        this.prefillFromProposal(Number(POID));
+      }
     }
  
   }
@@ -172,6 +178,71 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
   
   
   }
+
+ private async prefillFromProposal(proposalId: number) {
+  try {
+    showLoader();
+
+    const proposal = await sp.web.lists
+      .getByTitle("PODetails")
+      .items.getById(proposalId)
+      .select(
+        "Id",
+        "PONumber",
+        "POCategory",
+        "ProposalFor",
+        "POValue",
+        "ClientName",
+        "ClientID"
+      )
+      .get();
+
+    this.setState(
+      {
+        isEditMode: false,
+        POId:proposal.Id,
+        Location: proposal.ProposalFor,
+        ClientId: proposal.ClientID,
+        SaveUpdateText: "Submit"
+      },
+      async () => {
+        // 1️⃣ Load clients
+        await this.fetchClientsBasedOnLocation(
+          proposal.ProposalFor,
+          proposal.ClientName
+        );
+
+        // 2️⃣ Load PONumber and Invoice
+        await this.fetchPONumberbasedonClientName(
+          proposal.ClientName,
+          proposal.PONumber
+        );
+        await this.fetchInvoiceforsbasedonPONumber(
+          proposal.PONumber,
+          proposal.POValue,
+          proposal.POValue,
+          proposal.ProposalFor
+        );
+
+        // 3️⃣ Now set dropdown-selected values
+        this.setState({
+          ClientName: proposal.ClientName,
+          PONumber: proposal.PONumber,
+          POId:proposal.Id,
+          InvoiceFor: proposal.POCategory,
+          TotalPOValue: proposal.POValue,
+          AvailableBalance: proposal.POValue
+        });
+      }
+    );
+
+    hideLoader();
+  } catch (error) {
+    console.error("Error loading proposal details", error);
+    hideLoader();
+  }
+}
+
 
     private async checkpermisssion(){
       try {
@@ -842,35 +913,107 @@ private handleinvoicenumber = (e:any) => {
   }
   }
 
-  private fetchPONumberbasedonClientName = async(selectedClientName: string,selectedproject:string) => {
-     try{
-      showLoader();
-     const ProposalList = 'PODetails';
-    await sp.web.lists.getByTitle(ProposalList).items.select("Id", "PONumber")
-      .filter(`ClientName eq '${selectedClientName}'`).top(2000).get().then((Response: any[]) => {
-        console.log(Response);
-       const { isEditMode } = this.state;
-       
-       const POnumbertoptions=  Response.map(item => ({
-          label: item.PONumber,
-          value: item.PONumber
-        }));
-         this.setState({
-        PONumbers: POnumbertoptions,
-        PONumber:isEditMode ? selectedproject : '', // Set the selected project name if provided
-      
 
-      
+private fetchPONumberbasedonClientName = async (
+  selectedClientName: string,
+  selectedproject: string
+) => {
+  try {
+    showLoader(); 
 
-      });
-      
-      });
-    } catch(e){
-      console.log("Error in fetching po number",e);
-    }finally{
-      hideLoader();
-    }
+    // ----------------------------
+    // Step 1: Get all PODetails for the selected client
+    // ----------------------------
+    const poData = await sp.web.lists
+      .getByTitle("PODetails")
+      .items
+      .select("Id", "PONumber")
+      .filter(`ClientName eq '${selectedClientName}'`).orderBy("Modified", false)
+      .top(2000)
+      .get();
+
+    // ----------------------------
+    // Step 2: Get PO numbers from InvoiceDetails where AvailableBalance = 0
+    // ----------------------------
+    const invoiceData  = await sp.web.lists
+      .getByTitle("Invoices")
+      .items
+      .select("ProposalID", "AvailableBalance","InvoiceAmount")
+      .top(2000)
+      .get();
+
+
+
+     const zeroBalancePONumbers = invoiceData
+      .filter(item => (item.AvailableBalance - (item.InvoiceAmount || 0)) === 0)
+      .map(item => item.ProposalID);
+
+    // ----------------------------
+    // Step 3: Remove zero balance POs from PODetails
+    // ----------------------------
+    const filteredPOs = poData.filter(
+      po => !zeroBalancePONumbers.includes(po.PONumber)
+    );
+
+    // ----------------------------
+    // Step 4: Map filtered POs to dropdown options
+    // ----------------------------
+    const POnumbertoptions = filteredPOs.map(item => ({
+      label: item.PONumber,
+      value: item.PONumber
+    }));
+
+    // ----------------------------
+    // Step 5: Set state to display in dropdown
+    // ----------------------------
+    this.setState({
+      PONumbers: POnumbertoptions,
+      PONumber: selectedproject ?? this.state.PONumber
+    });
+
+  } catch (e) {
+    console.log("Error in fetching PO numbers:", e);
+  } finally {
+    hideLoader(); // hide loader after fetch
   }
+};
+
+
+
+
+
+
+
+  // private fetchPONumberbasedonClientName = async(selectedClientName: string,selectedproject:string) => {
+  //    try{
+  //     showLoader();
+  //    const ProposalList = 'PODetails';
+  //   await sp.web.lists.getByTitle(ProposalList).items.select("Id", "PONumber")
+  //     .filter(`ClientName eq '${selectedClientName}'`).top(2000).get().then((Response: any[]) => {
+  //       console.log(Response);
+  //     //  const { isEditMode } = this.state;
+       
+  //      const POnumbertoptions=  Response.map(item => ({
+  //         label: item.PONumber,
+  //         value: item.PONumber
+  //       }));
+  //        this.setState({
+  //       PONumbers: POnumbertoptions,
+  //       // PONumber:isEditMode ? selectedproject : '', // Set the selected project name if provided
+  //       PONumber: selectedproject ?? this.state.PONumber
+      
+
+      
+
+  //     });
+      
+  //     });
+  //   } catch(e){
+  //     console.log("Error in fetching po number",e);
+  //   }finally{
+  //     hideLoader();
+  //   }
+  // }
  private handleChangeClient = async (event: any, actionMeta?: any) => {
     let returnObj: any = {};
     let name: string | undefined;

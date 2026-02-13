@@ -687,7 +687,7 @@ const hasData = chartData.length > 1;
     }
     if (this.state.Homeredirect) {
       // let message = this.state.modalText;
-      let url = `/Dashboard`;
+      let url = `/NewDashboard`;
       return <Navigate to={url} />;
     }
 
