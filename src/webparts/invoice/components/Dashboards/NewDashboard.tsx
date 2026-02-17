@@ -237,7 +237,7 @@ const NewDashboard: React.FC <(INewDashboardProps)>=({spContext}) => {
       },
       sortable: true,
     },
-    { name: "Status", selector: (row: any) => row.Status, sortable: true },
+    // { name: "Status", selector: (row: any) => row.Status, sortable: true },
     { name: "Created By", selector: (row: any) => row.SubmittedBy?.Title || "-", sortable: true },
     { name: "Created Date", selector: (row: any) => DateUtilities.getDateMMDDYYYY(row.Created), sortable: true },
   ];
@@ -264,11 +264,16 @@ const NewDashboard: React.FC <(INewDashboardProps)>=({spContext}) => {
   const handleInvoiceRowClick = (row: any) => navigate(`/InvoiceForm?POID=${row.Id}`);
 
   return (
-    
   <div>
 
     {isLocationConfigured && (
       <>
+         <div className='container-fluid'>
+            <div className='FormContent ViewTable'>
+              <div className='title'> Dashboard</div>
+              <div className='after-title'></div>
+             <div className='border-box-shadow m-2 p-2'>
+              <div className='mt-4'>
         <div className="tab-header">
           <button
             className={activeTab === 'PO' ? 'active-tab' : ''}
@@ -309,6 +314,10 @@ const NewDashboard: React.FC <(INewDashboardProps)>=({spContext}) => {
               onRowClick={handleInvoiceRowClick}
             />
           )}
+        </div>
+        </div>
+        </div>
+        </div>
         </div>
       </>
     )}

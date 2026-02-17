@@ -52,6 +52,8 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
     modalTitle: '',
     isSuccess: false,
     ischecked: false,
+    TitleoftheProposal:'',
+    TitleofProposals:[],
     History: [] as ProjectStatusHistory[],
     showHideModal: false,
     errorMessage: '',
@@ -161,6 +163,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
       'PONumber',
       'Remarks',
       'ClientID',
+      'ProposalTitle',
 
 
 
@@ -190,6 +193,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
           ProjectStatus: Response.ProjectStatus,
           onLoadStatus: Response.ProjectStatus,
           Remarks: Response.Remarks,
+          TitleoftheProposal:Response.ProposalTitle,
           CRTitle: Response.CRTitle,
           NoofSprints: Response.Sprints,
           inprogressflag: Response.ProjectStatus == 'In-Progress' ? true : false,
@@ -204,7 +208,8 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
 
         // this.fetchClientsBasedOnLocation(Response.ProposalFor, Response.ClientName);
         this.fetchProjetsbasedonClientName(Response.ClientName, Response.Title);
-        this.fetchPONumbersbasedonProject(Response.Title, Response.PONumber);
+        this.fetchTitleofProposalBasedOnProjects(Response.Title,Response.ProposalTitle)
+        this.fetchPONumbersbasedonProject(Response.ProposalTitle, Response.PONumber);
         this.fetchDatesbasedonPONumber(Response.PONumber, Response.StartDate, Response.EndDate);
 
 
@@ -324,7 +329,88 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
     }
   };
 
-  private handleChangePONumber = async (event: any, actionMeta?: any) => {
+
+    private handlehandleTitleOfProposal = (event: any, actionMeta?: any) => {
+    let returnObj: any = {};
+    let name: string | undefined;
+    let value: any;
+    let label: string | undefined;
+
+    if (event && event.target) {
+      name = event.target.name;
+      value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+    } else if (actionMeta && actionMeta.name) {
+      name = actionMeta.name;
+      value = actionMeta.action === 'clear' ? '' : event?.value;
+      label = actionMeta.action === 'clear' ? '' : event?.label;
+    }
+
+    if (name !== undefined) {
+      if (name === 'ProjectName') {
+        this.setState({ ProposalFor: '', PONumbers: [] })
+      }
+      returnObj[name] = value;
+      this.setState(returnObj);
+
+
+      if (name === 'ProjectName' && label !== undefined) {
+        this.fetchTitleofProposalBasedOnProjects(label, '');
+      }
+      // this.setState({ TitleoftheProposal: '',TitleOfProposals: [], EstimationHours: '' });
+    }
+  };
+    private fetchTitleofProposalBasedOnProjects = (selectedLabel: string, selectedproposal: string) => {
+  
+      const EstimationsList = 'ProposalDetails';
+      sp.web.lists.getByTitle(EstimationsList).items.filter(`Title eq '${selectedLabel}' and ClientName eq '${this.state.ClientName}' and ProposalFor eq '${this.state.Location}' and Status eq 'Approved'`).select('Proposal', 'Id').top(2000).get().then((Response: any[]) => {
+        console.log(Response);
+  
+        const { isEditMode } = this.state;
+        const ProposalOptions = Response.map(item => ({
+          label: item.Proposal,
+          value: item.Proposal
+        }));
+        // const shouldBindValue = isEditMode || (!!selectedproposal && selectedproposal !== '');
+        this.setState({
+          // Set IsBulkVariablecheck based on the response
+          TitleofProposals: ProposalOptions,
+          TitleoftheProposal:isEditMode?selectedproposal:'', // Set the selected proposal title if provided
+  
+        });
+      });
+  
+    }
+
+  // private handleChangePONumber = async (event: any, actionMeta?: any) => {
+  //   let returnObj: any = {};
+  //   let name: string | undefined;
+  //   let value: any;
+  //   let label: string | undefined;
+
+  //   if (event && event.target) {
+  //     name = event.target.name;
+  //     value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+  //   } else if (actionMeta && actionMeta.name) {
+  //     name = actionMeta.name;
+  //     value = actionMeta.action === 'clear' ? '' : event?.value;
+  //     label = actionMeta.action === 'clear' ? '' : event?.label;
+  //   }
+
+  //   if (name !== undefined) {
+  //     returnObj[name] = value;
+  //     this.setState(returnObj);
+
+
+  //     if (name === 'ProjectName' && label !== undefined) {
+  //       this.fetchPONumbersbasedonProject(value, '');
+  //     }
+  //     this.setState({ StartDate: null, EndDate: null });
+
+  //   }
+  // };
+
+
+private handleChangePONumber = async (event: any, actionMeta?: any) => {
     let returnObj: any = {};
     let name: string | undefined;
     let value: any;
@@ -344,13 +430,81 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
       this.setState(returnObj);
 
 
-      if (name === 'ProjectName' && label !== undefined) {
+      if (name === 'TitleoftheProposal' && label !== undefined) {
         this.fetchPONumbersbasedonProject(value, '');
       }
       this.setState({ StartDate: null, EndDate: null });
 
     }
   };
+
+
+
+private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any) {
+    const POList = 'PODetails';
+
+    let filterQuery = "";
+      if (this.state.isEditMode && selectedponumber) {
+    filterQuery = `ProjectTitle eq '${this.state.ProjectName}' and ProposalTitle eq '${selectedproject}'
+                   and ClientName eq '${this.state.ClientName}' 
+                   and (Status eq 'In-Progress' or PONumber eq '${selectedponumber}')`;
+  } else {
+    filterQuery = `ProjectTitle eq '${this.state.ProjectName}' and ProposalTitle eq '${selectedproject}'
+                   and ClientName eq '${this.state.ClientName}' 
+                   and Status eq 'In-Progress'`;
+  }
+    sp.web.lists.getByTitle(POList).items.select("Id", "PONumber").filter(filterQuery).top(2000).get().then((Response: any[]) => {
+      const { isEditMode } = this.state;
+      const PONumberoptions = Response.map(item => ({
+        label: item.PONumber,
+        value: item.PONumber
+      }));
+
+      this.setState({
+        PONumers: PONumberoptions,
+        PONumber: isEditMode ? selectedponumber : ''
+      })
+
+    })
+  }
+
+
+
+
+
+
+
+
+
+
+
+// private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any) {
+  //   const POList = 'PODetails';
+
+  //   let filterQuery = "";
+  //     if (this.state.isEditMode && selectedponumber) {
+  //   filterQuery = `ProjectTitle eq '${selectedproject}' 
+  //                  and ClientName eq '${this.state.ClientName}' 
+  //                  and (Status eq 'In-Progress' or PONumber eq '${selectedponumber}')`;
+  // } else {
+  //   filterQuery = `ProjectTitle eq '${selectedproject}' 
+  //                  and ClientName eq '${this.state.ClientName}' 
+  //                  and Status eq 'In-Progress'`;
+  // }
+  //   sp.web.lists.getByTitle(POList).items.select("Id", "PONumber").filter(filterQuery).top(2000).get().then((Response: any[]) => {
+  //     const { isEditMode } = this.state;
+  //     const PONumberoptions = Response.map(item => ({
+  //       label: item.PONumber,
+  //       value: item.PONumber
+  //     }));
+
+  //     this.setState({
+  //       PONumers: PONumberoptions,
+  //       PONumber: isEditMode ? selectedponumber : ''
+  //     })
+
+  //   })
+  // }
 
 
 
@@ -406,7 +560,8 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
     let data: any = {}
     data.location = { val: this.state.Location, required: true, Name: "'Location'", Type: ControlType.string, Focusid: this.inputLocation };
     data.ClientName = { val: this.state.ClientName, required: true, Name: "'Client Name'", Type: ControlType.reactSelect, Focusid: 'Client' };
-    data.ProjectName = { val: this.state.ProjectName, required: true, Name: "'Project'", Type: ControlType.reactSelect, Focusid: 'ProjectName' }
+    data.ProjectName = { val: this.state.ProjectName, required: true, Name: "'Project'", Type: ControlType.reactSelect, Focusid: 'ProjectName' },
+    data.TitleoftheProposal={val:this.state.TitleoftheProposal,required:true, Name: "'Project Proposal'", Type: ControlType.reactSelect, Focusid: 'TitleoftheProposal'}
     data.PONumber = { val: this.state.PONumber, required: true, Name: "'PO Number'", Type: ControlType.reactSelect, Focusid: 'PONumber' }
     data.ExecutionType = { val: this.state.ExecutionType, required: true, Name: "'Execution Type'", Type: ControlType.string, Focusid: this.inputExecutionType }
     if (this.state.ExecutionType === 'CR') {
@@ -426,6 +581,7 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
       ProposalFor: this.state.Location,
       ClientName: this.state.ClientName,
       Title: this.state.ProjectName,
+       ProposalTitle:this.state.TitleoftheProposal,
       PONumber: this.state.PONumber,
       ExecutionType: this.state.ExecutionType,
       StartDate: this.state.StartDate,
@@ -980,33 +1136,33 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
 
   }
 
-  private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any) {
-    const POList = 'PODetails';
+  // private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any) {
+  //   const POList = 'PODetails';
 
-    let filterQuery = "";
-      if (this.state.isEditMode && selectedponumber) {
-    filterQuery = `ProjectTitle eq '${selectedproject}' 
-                   and ClientName eq '${this.state.ClientName}' 
-                   and (Status eq 'In-Progress' or PONumber eq '${selectedponumber}')`;
-  } else {
-    filterQuery = `ProjectTitle eq '${selectedproject}' 
-                   and ClientName eq '${this.state.ClientName}' 
-                   and Status eq 'In-Progress'`;
-  }
-    sp.web.lists.getByTitle(POList).items.select("Id", "PONumber").filter(filterQuery).top(2000).get().then((Response: any[]) => {
-      const { isEditMode } = this.state;
-      const PONumberoptions = Response.map(item => ({
-        label: item.PONumber,
-        value: item.PONumber
-      }));
+  //   let filterQuery = "";
+  //     if (this.state.isEditMode && selectedponumber) {
+  //   filterQuery = `ProjectTitle eq '${selectedproject}' 
+  //                  and ClientName eq '${this.state.ClientName}' 
+  //                  and (Status eq 'In-Progress' or PONumber eq '${selectedponumber}')`;
+  // } else {
+  //   filterQuery = `ProjectTitle eq '${selectedproject}' 
+  //                  and ClientName eq '${this.state.ClientName}' 
+  //                  and Status eq 'In-Progress'`;
+  // }
+  //   sp.web.lists.getByTitle(POList).items.select("Id", "PONumber").filter(filterQuery).top(2000).get().then((Response: any[]) => {
+  //     const { isEditMode } = this.state;
+  //     const PONumberoptions = Response.map(item => ({
+  //       label: item.PONumber,
+  //       value: item.PONumber
+  //     }));
 
-      this.setState({
-        PONumers: PONumberoptions,
-        PONumber: isEditMode ? selectedponumber : ''
-      })
+  //     this.setState({
+  //       PONumers: PONumberoptions,
+  //       PONumber: isEditMode ? selectedponumber : ''
+  //     })
 
-    })
-  }
+  //   })
+  // }
 
   private fetchProjetsbasedonClientName = (selectedClientName: string, selectedproject: string) => {
     const ProposalList = 'ProposalDetails';
@@ -1135,13 +1291,32 @@ class ProjectStatuspage extends React.Component<IProjectstatusProps, IProjectsta
 
                       </select> */}
                       <div className="custom-dropdown">
-                        <SearchableDropdown label="Project" Title="ProjectName" name="ProjectName" id="ProjectName" placeholderText="None" disabled={this.state.isEditMode} className="" selectedValue={this.state.ProjectName} optionLabel={'label'} optionValue={'label'} OptionsList={this.state.ProjectNames} onChange={(selectedOption: any, actionMeta: any) => { this.handleChangePONumber(selectedOption, actionMeta) }} isRequired={true} refElement={this.inputClientName} noOptionsMessage="None"></SearchableDropdown>
+                        <SearchableDropdown label="Project" Title="ProjectName" name="ProjectName" id="ProjectName" placeholderText="None" disabled={this.state.isEditMode} className="" selectedValue={this.state.ProjectName} optionLabel={'label'} optionValue={'label'} OptionsList={this.state.ProjectNames} onChange={(selectedOption: any, actionMeta: any) => { this.handlehandleTitleOfProposal(selectedOption, actionMeta) }} isRequired={true} refElement={this.inputClientName} noOptionsMessage="None"></SearchableDropdown>
 
                       </div>
 
 
                     </div>
                   </div>
+                     <div className="col-md-3">
+                      <div className="light-text">
+                        <label >Project Proposal<span className="mandatoryhastrick">*</span></label>
+
+                        {/* <select className="form-control" required={true} onChange={this.handlePoCategory} name="TitleoftheProposal" disabled={this.state.isEditMode} value={this.state.TitleoftheProposal} title="TitleoftheProposal"  itemRef='TitleoftheProposal' ref={this.inputProposalTitle}>
+                          <option value=''>None</option>
+                          {this.state.TitleOfProposals.map((TitleOfProposal: any, index: any) => (
+                            <option key={index} value={TitleOfProposal.Id}>{TitleOfProposal.label}</option>
+                          ))}
+
+                        </select> */}
+                        <div className="custom-dropdown">
+                          <SearchableDropdown label="Project Proposal" Title="TitleoftheProposal" name="TitleoftheProposal" id="TitleoftheProposal" placeholderText="None" disabled={this.state.isEditMode} className="" selectedValue={this.state.TitleoftheProposal} optionLabel={'label'} optionValue={'label'} OptionsList={this.state.TitleofProposals} onChange={(selectedOption: any, actionMeta: any) => { this.handleChangePONumber(selectedOption, actionMeta) }} isRequired={true} refElement={this.inputClientName} noOptionsMessage="None"></SearchableDropdown>
+
+                        </div>
+
+
+                      </div>
+                    </div>
                   <div className="col-md-3">
                     <div className="light-text">
                       <label >PO Number<span className="mandatoryhastrick">*</span></label>

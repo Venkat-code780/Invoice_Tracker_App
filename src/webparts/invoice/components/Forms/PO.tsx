@@ -14,6 +14,7 @@ import { showLoader, hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component';
 import Icons from '../../assets/Icons';
 import SearchableDropdown from '../Shared/Searchbledropdown';
+import InputCheckBox from '../Shared/InputCheckBox';
 
 
 
@@ -978,6 +979,8 @@ class PO extends React.Component<IPOProps, IPOState> {
     });
 
   }
+  
+
 
   // private fetchProjectsBasedOnProposalfor = (selectedProposal: string, selectedproject: string) => {
 
@@ -1259,7 +1262,12 @@ class PO extends React.Component<IPOProps, IPOState> {
       : num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   };
 
+ private handleCheckbox = (event: React.ChangeEvent<HTMLInputElement>) => {
+ 
+    this.setState({ ischecked: event.target.checked });
 
+
+  }
 
   private async getCurrentUserGroups() {
     try {
@@ -1671,6 +1679,15 @@ class PO extends React.Component<IPOProps, IPOState> {
                           <DatePicker onDatechange={(date: any) => this.handleDateChange(date, 'EffectiveTo')} isDisabled={this.state.isEditMode} ref={this.inputEffectiveTo} placeholder="MM/DD/YYYY" selectedDate={this.state.EffectiveTo} id={'txtEffectiveTo'} title={"Effective To"} />
                         </div>
                       </div>
+                    </div>
+
+                    <div className='col-md-3 mt-2'>
+                      <InputCheckBox
+                    name={"Is Bulk PO"}
+                    checked={this.state.ischecked}
+
+                    isforMasters={false} onChange={this.handleCheckbox} isdisable={false}  label={' Is Bulk PO'} />
+
                     </div>
 
 

@@ -182,7 +182,7 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
  private async prefillFromProposal(proposalId: number) {
   try {
     showLoader();
-
+    
     const proposal = await sp.web.lists
       .getByTitle("PODetails")
       .items.getById(proposalId)
@@ -196,14 +196,23 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
         "ClientID"
       )
       .get();
-
+       let currencySymbol = '';
+    if (proposal.ProposalFor === 'AUS') {
+      currencySymbol = 'AU$';
+    } else if (proposal.ProposalFor === 'GDC') {
+      currencySymbol = '₹';
+    } else if (proposal.ProposalFor === 'Onsite') {
+      currencySymbol = '$';
+    }
     this.setState(
       {
         isEditMode: false,
         POId:proposal.Id,
         Location: proposal.ProposalFor,
         ClientId: proposal.ClientID,
-        SaveUpdateText: "Submit"
+        SaveUpdateText: "Submit",
+        currencySymbols:currencySymbol
+
       },
       async () => {
         // 1️⃣ Load clients
@@ -951,9 +960,17 @@ private fetchPONumberbasedonClientName = async (
     // ----------------------------
     // Step 3: Remove zero balance POs from PODetails
     // ----------------------------
-    const filteredPOs = poData.filter(
-      po => !zeroBalancePONumbers.includes(po.PONumber)
-    );
+    // const filteredPOs = poData.filter(
+    //   po => !zeroBalancePONumbers.includes(po.PONumber)
+    // );
+    const filteredPOs = poData.filter(po => {
+  const isZeroBalance = zeroBalancePONumbers.includes(po.PONumber);
+
+  // Keep PO if:
+  // 1. Not zero balance
+  // 2. OR it is the selected PO in edit mode
+  return !isZeroBalance || po.PONumber === selectedproject;
+});
 
     // ----------------------------
     // Step 4: Map filtered POs to dropdown options

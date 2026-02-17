@@ -839,11 +839,26 @@
     color: rgb(32, 31, 30);
     background: rgb(200, 198, 196);
   }
-  .btn.upload-btn {
+  /* .btn.upload-btn {
     color: white!important;
     background-color: #0b3e50!important;
     border-radius: 0!important;
-  }
+  } */
+.btn.upload-btn {
+  color: #0b3e50 !important;
+  background-color: transparent !important;
+   padding: 6px 14px !important;
+  /* thinner border */
+  border-radius: 0 !important;
+  transition: all 0.3s ease;
+}
+
+.btn.upload-btn:hover {
+  color: #ffffff !important;
+  background-color: #0b3e50 !important;
+}
+
+
   .button-area {
     border-top: 1px solid #f3f3f3;
     padding: 20px 0;
@@ -2689,20 +2704,35 @@ button.SubmitButtons:focus-visible {
 
 .tab-header {
     display: flex;
-    gap: 10px;
-    margin-bottom: 12px;
+    background: #f3f3f3;
+    border-bottom: 1px solid #ddd;
+    padding-left: 10px;
 }
 
 .tab-header button {
-    padding: 8px 16px;
-    border: 1px solid #ccc;
-    background: #f4f4f4;
+       position: relative;
+    padding: 12px 22px;
+    border: none;
+    background: transparent;
     cursor: pointer;
-    border-radius: 4px;
+    color: #555;
+    font-weight: 500;
+    border-radius: 0;
+    transition: 0.3s ease;
 }
 
 .tab-header .active-tab {
-    background: #0078d4;
-    color: white;
-    border-color: #0078d4;
+    background: #0b3e50;   /* Purple */
+    color: #fff;
+    font-weight: 600;
+}
+.tab-header .active-tab::after {
+    content: "";
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid #0b3e50;
 }
