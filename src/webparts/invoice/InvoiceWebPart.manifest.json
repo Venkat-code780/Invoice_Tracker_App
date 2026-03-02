@@ -1,10 +1,8 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
-  "id": "9b515eaf-6d08-46fe-a667-1504e455f601",
+  "id": "9b515eaf-6d08-46fe-a667-1504e455f600",
   "alias": "InvoiceWebPart",
   "componentType": "WebPart",
-
-
   "version": "*",
   "manifestVersion": 2,
 
@@ -16,11 +14,11 @@
   "preconfiguredEntries": [{
     "groupId": "5c03119e-3074-46fd-976b-c60198311f70", 
     "group": { "default": "Advanced" },
-    "title": { "default": "Invoice - Prod" },
+    "title": { "default": "Invoice - Dev" },
     "description": { "default": "Invoice description" },
     "officeFabricIconFontName": "Page",
     "properties": {
-      "description": "Invoice - Prod"
+      "description": "Invoice - Dev"
     }
   }]
 }

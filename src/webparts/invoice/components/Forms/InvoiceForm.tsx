@@ -96,6 +96,7 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
     isPermissionChecked:false,
     isUnAuthorized:false,
     islocationconfigured:true,
+    redirectToNewDashboard:false
 
 
 
@@ -483,6 +484,7 @@ private handleinvoicenumber = (e:any) => {
         }
       }
     }
+    
     // private deleteListItem() {
     //   let list = sp.web.lists.getByTitle("InvoicesDocs");
     //   if (this.state.delfileArr.length > 0) {
@@ -641,7 +643,15 @@ private handleinvoicenumber = (e:any) => {
   }
 
   private handleCancel = () => {
+    const hash = window.location.hash;
+ const queryParams = hash.includes("?") ? new URLSearchParams(hash.split("?")[1]) : new URLSearchParams(""); 
+ const from = queryParams.get("from");
+    if(from === "dashboard"){
+       this.setState({redirectToNewDashboard:true});
+    }
+    else{
     this.setState({ Homeredirect: true, ItemID: 0, errorMessage: "" });
+    }
   }
   
 
@@ -1311,7 +1321,11 @@ formatWithCommasInvoiced = (value: string | number): string => {
       if (this.state.isUnAuthorized) {
       return <UnAuthorized spContext={this.props.spContext}></UnAuthorized>
     }
-    else if (this.state.Homeredirect) {
+    if(this.state.redirectToNewDashboard)
+    {
+      return <Navigate to="/NewDashboard" />;
+    }
+   if (this.state.Homeredirect) {
       // let message = this.state.modalText;
       let url = `/Invoice_View`;
       return <Navigate to={url} />;

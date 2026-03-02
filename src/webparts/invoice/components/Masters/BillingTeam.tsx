@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { sp, SPHttpClient } from '@pnp/sp/presets/all';
 import ModalPopUp from '../Shared/ModalPopUp';
-import TableGenerator from '../Shared/TableGenerator';
+// import TableGenerator from '../Shared/TableGenerator';
 import formValidation from '../Utilities/Formvalidator';
 import { Navigate, NavLink } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -11,6 +11,7 @@ import { ControlType } from '../Utilities/Constants';
 import { PeoplePicker, PrincipalType } from '@pnp/spfx-controls-react/lib/controls/peoplepicker';
 import { showLoader,hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component'
+import AGGridDataTable from '../Shared/AGGridDataTable';
 //import { result } from 'lodash';
 //import { sortDate } from '@pnp/spfx-controls-react';
 
@@ -515,42 +516,82 @@ private insertorupdateListitem = async (formData: any, list: any) => {
   public render() {
   
     let columns = [
-      {
-        name: "Edit",
-        //selector: "Id",
-        selector: (row: { Id: any; }, i: any) => row.Id,
-        cell: (record: { Id: any; }) => {
-          return (
-            <React.Fragment>
-              <div style={{ paddingLeft: '10px' }}>
-                <NavLink title="Edit" className="csrLink ms-draggable" to={`/BillingTeam/${record.Id}`}>
-                  <FontAwesomeIcon icon={faEdit} onClick={() => { this.onEditClickHandler(record.Id); }}></FontAwesomeIcon>
-                </NavLink>
-              </div>
-            </React.Fragment>
-          );
-        }
-      },
+      // {
+      //   name: "Edit",
+      //   //selector: "Id",
+      //   selector: (row: { Id: any; }, i: any) => row.Id,
+      //   cell: (record: { Id: any; }) => {
+      //     return (
+      //       <React.Fragment>
+      //         <div style={{ paddingLeft: '10px' }}>
+      //           <NavLink title="Edit" className="csrLink ms-draggable" to={`/BillingTeam/${record.Id}`}>
+      //             <FontAwesomeIcon icon={faEdit} onClick={() => { this.onEditClickHandler(record.Id); }}></FontAwesomeIcon>
+      //           </NavLink>
+      //         </div>
+      //       </React.Fragment>
+      //     );
+      //   }
+      // },
 
-      {
-        name: "Location",
-        selector: (row: any, i: any) => row.Location,
-        sortable: true
-      },
+      // {
+      //   name: "Location",
+      //   selector: (row: any, i: any) => row.Location,
+      //   sortable: true
+      // },
 
-      {
-        name: "User",
-        selector: (row: any, i: any) => row.User,
-          cell: (row:any)=>  <div
-                 className='divUser'
-                 onClick={() => this.onEditClickHandler(row.Id)} // manually trigger
-                 dangerouslySetInnerHTML={{ __html: row.User}}
-                 style={{ cursor: 'pointer' }}
-               />,
-        // cell: (row: any) => <div className='divUser' dangerouslySetInnerHTML={{ __html: row.User }} />,
-        sortable: true
-      }
-
+      // {
+      //   name: "User",
+      //   selector: (row: any, i: any) => row.User,
+      //     cell: (row:any)=>  <div
+      //            className='divUser'
+      //            onClick={() => this.onEditClickHandler(row.Id)} // manually trigger
+      //            dangerouslySetInnerHTML={{ __html: row.User}}
+      //            style={{ cursor: 'pointer' }}
+      //          />,
+      //   // cell: (row: any) => <div className='divUser' dangerouslySetInnerHTML={{ __html: row.User }} />,
+      //   sortable: true
+      // }
+      
+       {
+    field: "Id",
+    headerName: "Edit",
+    sortable: false,
+    filter: false,
+    width: 80,
+    minWidth: 65,
+    cellRenderer: (params: any) => (
+      <div style={{ paddingLeft: "10px" }}>
+        <NavLink title="Edit" className="csrLink ms-draggable" to={`/BillingTeam/${params.data.Id}`}>
+          <FontAwesomeIcon
+            icon={faEdit}
+            onClick={() => params.context.onEditClickHandler(params.data.Id)}
+          />
+        </NavLink>
+      </div>
+    ),
+  },
+  {
+    field: "Location",
+    headerName: "Location",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+  {
+    field: "User",
+    headerName: "User",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+    cellRenderer: (params: any) => (
+      <div
+        className="divUser"
+        onClick={() => params.context.onEditClickHandler(params.data.Id)} // manually trigger
+        dangerouslySetInnerHTML={{ __html: params.value }}
+        style={{ cursor: "pointer" }}
+      />
+    ),
+  },
 
 
     ];
@@ -661,7 +702,29 @@ private insertorupdateListitem = async (formData: any, list: any) => {
                 </div>
 
                 <div className="light-box border-box-shadow mx-2 table-head-1st-td right-search-table py-2">
-                  <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={(row: any) => this.onEditClickHandler(row.Id)} ></TableGenerator>
+                  {/* <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={(row: any) => this.onEditClickHandler(row.Id)} ></TableGenerator> */}
+                    <AGGridDataTable
+                      data={this.state.data}
+                      columns={columns}
+                      showExportExcel={false}
+                      showAddButton={false}
+                      customBtnClass='px-1 text-right'
+                      btnDivID=''
+                      btnSpanID=''
+                      btnCaption=" New"
+                      btnTitle=''
+                      searchBoxLeft={true}
+                      onRowClicked={(event: any) => this.onEditClickHandler(event.data.Id)} // <-- fix here
+                      domLayout="normal"
+                      suppressColumnVirtualization={true}
+                      ensureDomOrder={true}
+                      suppressHorizontalScroll={false}
+                      suppressSizeToFit={true}
+                      suppressColumnHiding={true}
+                      suppressAutoSize={true}
+                      suppressColumnMoveAnimation={true}
+                      suppressMovableColumns={true}
+                    />
                 </div>
               </div>
             </div>

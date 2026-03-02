@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { sp, SPHttpClient } from '@pnp/sp/presets/all';
-import TableGenerator from '../Shared/TableGenerator'; // Adjusted path to match the correct module location
+// import TableGenerator from '../Shared/TableGenerator'; // Adjusted path to match the correct module location
 import { Navigate, NavLink } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit } from '@fortawesome/free-solid-svg-icons';
@@ -8,6 +8,7 @@ import DateUtilities from '../Utilities/Dateutilities';
 import { showLoader, hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component';
 import Icons from '../../assets/Icons';
+import AGGridDataTable from '../Shared/AGGridDataTable';
 export interface EstimationViewProps {
 
   match: any;
@@ -291,87 +292,193 @@ private getYears = (data: any[]) => {
     this.setState({ data: filteredData, allYears: allYears, allData: data, SaveUpdateText: 'Submit' });
     hideLoader();
   }
-  private handleRowClicked = (row: any, Id?: any) => {
-    let ID = row.Id ? row.Id : Id;
-    this.setState({ ItemID: ID, redirect: true });
-  }
+  // private handleRowClicked = (row: any, Id?: any) => {
+  //   let ID = row.Id ? row.Id : Id;
+  //   this.setState({ ItemID: ID, redirect: true });
+  // }
+private handleRowClicked = (row: any) => {
+  this.setState({
+    ItemID: row.Id,
+    redirect: true
+  });
+};
   public render() {
     let columns = [
-      {
+      // {
 
-        name: "Edit",
-        //selector: "Id",
-        selector: (row: { Id: any; }, i: any) => row.Id,
-        cell: (record: { Id: any; }) => {
-          return (
-            <React.Fragment>
-              <div style={{ paddingLeft: '10px' }}>
-                <NavLink title="Edit" className="csrLink ms-draggable" to={`/Estimation/${record.Id}`}>
-                  <FontAwesomeIcon icon={faEdit} ></FontAwesomeIcon>
-                </NavLink>
-              </div>
-            </React.Fragment>
-          );
-        },
-        width:'60px',
-      },
+      //   name: "Edit",
+      //   //selector: "Id",
+      //   selector: (row: { Id: any; }, i: any) => row.Id,
+      //   cell: (record: { Id: any; }) => {
+      //     return (
+      //       <React.Fragment>
+      //         <div style={{ paddingLeft: '10px' }}>
+      //           <NavLink title="Edit" className="csrLink ms-draggable" to={`/Estimation/${record.Id}`}>
+      //             <FontAwesomeIcon icon={faEdit} ></FontAwesomeIcon>
+      //           </NavLink>
+      //         </div>
+      //       </React.Fragment>
+      //     );
+      //   },
+      //   width:'60px',
+      // },
 
-      {
+      // {
 
-        name: "Location",
-        selector: (row: any, i: any) => row.GDCOrOnsite,
-        sortable: true,
+      //   name: "Location",
+      //   selector: (row: any, i: any) => row.GDCOrOnsite,
+      //   sortable: true,
 
-      },
-      {
-        name: "Client Name",
-        selector: (row: any, i: any) => row.ClientName,
-        sortable: true,
-      },
-      {
-        name: "Title of the Project",
-        selector: (row: any, i: any) => row.TitleOfTheProject,
-        sortable: true,
+      // },
+      // {
+      //   name: "Client Name",
+      //   selector: (row: any, i: any) => row.ClientName,
+      //   sortable: true,
+      // },
+      // {
+      //   name: "Title of the Project",
+      //   selector: (row: any, i: any) => row.TitleOfTheProject,
+      //   sortable: true,
 
-      },
-      {
-        name: "Estimated Hours",
-        selector: (row: any, i: any) => row.EstimatedHour,
-        sortable: true,
-        wrap: true,
-      },
-      {
-        name: "Title of the Estimation",
-        selector: (row: any, i: any) => row.TitleoftheEstimation,
-        sortable: true,
+      // },
+      // {
+      //   name: "Estimated Hours",
+      //   selector: (row: any, i: any) => row.EstimatedHour,
+      //   sortable: true,
+      //   wrap: true,
+      // },
+      // {
+      //   name: "Title of the Estimation",
+      //   selector: (row: any, i: any) => row.TitleoftheEstimation,
+      //   sortable: true,
 
-      },
-      {
-        name: "Estimation Status",
-        selector: (row: any, i: any) => row.EstimationStatus,
-        sortable: true,
+      // },
+      // {
+      //   name: "Estimation Status",
+      //   selector: (row: any, i: any) => row.EstimationStatus,
+      //   sortable: true,
 
-      },
-      {
-        name: "Proposal Status",
-        selector: (row: any, i: any) => row.Status,
-        sortable: true,
+      // },
+      // {
+      //   name: "Proposal Status",
+      //   selector: (row: any, i: any) => row.Status,
+      //   sortable: true,
 
-      },
-      {
-        name: "Submitted Date",
-        selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.SubmittedDate),
-        sortable: true,
-         sortFunction: (a: any, b: any) =>
-           new Date(a.SubmittedDate).getTime() -
-           new Date(b.SubmittedDate).getTime()
-      },
-      {
-        name: "Submitted By",
-        selector: (row: any, i: any) => row.Author,
-        sortable: true,
+      // },
+      // {
+      //   name: "Submitted Date",
+      //   selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.SubmittedDate),
+      //   sortable: true,
+      //    sortFunction: (a: any, b: any) =>
+      //      new Date(a.SubmittedDate).getTime() -
+      //      new Date(b.SubmittedDate).getTime()
+      // },
+      // {
+      //   name: "Submitted By",
+      //   selector: (row: any, i: any) => row.Author,
+      //   sortable: true,
 
-      },
+      // },
+       {
+    field: "Id",
+    headerName: "Edit",
+    sortable: false,
+    filter: false,
+    width: 60,
+    minWidth: 60,
+    maxWidth: 60,
+    cellRenderer: (params: any) => (
+      <div style={{ paddingLeft: "10px" }}>
+        <NavLink
+          title="Edit"
+          className="csrLink ms-draggable"
+          to={`/Estimation/${params.data.Id}`}
+        >
+          <FontAwesomeIcon icon={faEdit} />
+        </NavLink>
+      </div>
+    ),
+  },
+
+  {
+    field: "GDCOrOnsite",
+    headerName: "Location",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "ClientName",
+    headerName: "Client Name",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "TitleOfTheProject",
+    headerName: "Title of the Project",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "EstimatedHour",
+    headerName: "Estimated Hours",
+    sortable: true,
+    filter: "agNumberColumnFilter",
+    resizable: true,
+    wrapText: true,
+    autoHeight: true,
+  },
+
+  {
+    field: "TitleoftheEstimation",
+    headerName: "Title of the Estimation",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "EstimationStatus",
+    headerName: "Estimation Status",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "Status",
+    headerName: "Proposal Status",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "SubmittedDate",
+    headerName: "Submitted Date",
+    sortable: true,
+    filter: "agDateColumnFilter",
+    resizable: true,
+    valueFormatter: (params: any) =>
+      params.value ? DateUtilities.getDateMMDDYYYY(params.value) : "-",
+    comparator: (valueA: any, valueB: any) =>
+      new Date(valueA).getTime() - new Date(valueB).getTime(),
+  },
+
+  {
+    field: "Author",
+    headerName: "Submitted By",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+    valueGetter: (params: any) =>
+      params.data.Author?.Title || params.data.Author || "-",
+  },
 
 
     ]
@@ -417,7 +524,29 @@ private getYears = (data: any[]) => {
               {/* <div className="light-box border-box-shadow mx-2 table-head-1st-td py-2 right-search-table"> */}
                <div className="border-box-shadow light-box table-responsive dataTables_wrapper-overflow right-search-table py-2">
 
-                <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={this.handleRowClicked} ></TableGenerator>
+                {/* <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={this.handleRowClicked} ></TableGenerator> */}
+                  <AGGridDataTable
+                      data={this.state.data}
+                      columns={columns}
+                      showExportExcel={false}
+                      showAddButton={false}
+                      customBtnClass='px-1 text-right'
+                      btnDivID=''
+                      btnSpanID=''
+                      btnCaption=" New"
+                      btnTitle=''
+                      searchBoxLeft={true}
+                      onRowClicked={(event: any) => this.handleRowClicked(event.data)} // <-- fix here
+                      domLayout="normal"
+                      suppressColumnVirtualization={true}
+                      ensureDomOrder={true}
+                      suppressHorizontalScroll={false}
+                      suppressSizeToFit={true}
+                      suppressColumnHiding={true}
+                      suppressAutoSize={true}
+                      suppressColumnMoveAnimation={true}
+                      suppressMovableColumns={true}
+                    />
               </div>
               </div>
               </div>

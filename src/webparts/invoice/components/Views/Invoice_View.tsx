@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { sp, SPHttpClient } from '@pnp/sp/presets/all';
-import TableGenerator from '../Shared/TableGenerator'; // Adjusted path to match the correct module location
+// import TableGenerator from '../Shared/TableGenerator'; // Adjusted path to match the correct module location
 import { Navigate, NavLink } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit } from '@fortawesome/free-solid-svg-icons';
@@ -8,6 +8,7 @@ import DateUtilities from '../Utilities/Dateutilities';
 import { showLoader, hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component';
 import Icons from '../../assets/Icons';
+import AGGridDataTable from '../Shared/AGGridDataTable';
 
 export interface InvoiceViewProps {
 
@@ -328,10 +329,16 @@ private getYears = (data: any[]) => {
     this.setState({ data: filteredData, allYears: allYears, allData: data, SaveUpdateText: 'Submit' });
     hideLoader();
   }
-  private handleRowClicked = (row: any, Id?: any) => {
-    let ID = row.Id ? row.Id : Id;
-    this.setState({ ItemID: ID, redirect: true });
-  }
+  // private handleRowClicked = (row: any, Id?: any) => {
+  //   let ID = row.Id ? row.Id : Id;
+  //   this.setState({ ItemID: ID, redirect: true });
+  // }
+   private handleRowClicked = (row: any) => {
+    this.setState({
+      ItemID: row.Id,
+      redirect: true
+    });
+  };
   public render() {
     // if (!this.state.isPermissionChecked || !this.state.isAdmin) {
     //   const navIcon = document.querySelector('.click-nav-icon') as HTMLElement;
@@ -345,130 +352,274 @@ private getYears = (data: any[]) => {
     
 
     let columns = [
-      {
-        name: "Edit",
-        //selector: "Id",
-        selector: (row: { Id: any; }, i: any) => row.Id,
-        cell: (record: { Id: any; }) => {
-          return (
-            <React.Fragment>
-              <div style={{ paddingLeft: '10px' }}>
-                <NavLink title="Edit" className="csrLink ms-draggable" to={`/InvoiceForm/${record.Id}`}>
-                  <FontAwesomeIcon icon={faEdit} ></FontAwesomeIcon>
-                </NavLink>
-              </div>
-            </React.Fragment>
-          );
-        },
-        width:'60px',
-      },
+//       {
+//         name: "Edit",
+//         //selector: "Id",
+//         selector: (row: { Id: any; }, i: any) => row.Id,
+//         cell: (record: { Id: any; }) => {
+//           return (
+//             <React.Fragment>
+//               <div style={{ paddingLeft: '10px' }}>
+//                 <NavLink title="Edit" className="csrLink ms-draggable" to={`/InvoiceForm/${record.Id}`}>
+//                   <FontAwesomeIcon icon={faEdit} ></FontAwesomeIcon>
+//                 </NavLink>
+//               </div>
+//             </React.Fragment>
+//           );
+//         },
+//         width:'60px',
+//       },
 
-      {
-        name: "Location",
-        selector: (row: any, i: any) => row.ProposalFor,
-        sortable: true,
-      },
-      {
-        name: "Client Name",
-        selector: (row: any, i: any) => row.ClientName,
-        sortable: true,
-      },
-      {
-        name: "Invoice For",
-        selector: (row: any, i: any) => row.InvoiceType,
-        sortable: true,
-      },
-      {
-        name: "PO Number",
-        selector: (row: any, i: any) => row.ProposalID,
-        sortable: true,
-      },
-      // {
-      //   name: "Total PO Value",
-      //   selector: (row: any, i: any) => row.TotalPo,
-      //   sortable: true,
-      // },
-                            {
-  name: "Total PO Value",
-  selector: (row: any, i: any) => {
-    const amount = parseFloat(row.TotalPo);
-    if (isNaN(amount)) return "-";
+//       {
+//         name: "Location",
+//         selector: (row: any, i: any) => row.ProposalFor,
+//         sortable: true,
+//       },
+//       {
+//         name: "Client Name",
+//         selector: (row: any, i: any) => row.ClientName,
+//         sortable: true,
+//       },
+//       {
+//         name: "Invoice For",
+//         selector: (row: any, i: any) => row.InvoiceType,
+//         sortable: true,
+//       },
+//       {
+//         name: "PO Number",
+//         selector: (row: any, i: any) => row.ProposalID,
+//         sortable: true,
+//       },
+//       // {
+//       //   name: "Total PO Value",
+//       //   selector: (row: any, i: any) => row.TotalPo,
+//       //   sortable: true,
+//       // },
+//                             {
+//   name: "Total PO Value",
+//   selector: (row: any, i: any) => {
+//     const amount = parseFloat(row.TotalPo);
+//     if (isNaN(amount)) return "-";
 
-    return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
+//     return new Intl.NumberFormat('en-US', {
+//       style: 'decimal',
+//       minimumFractionDigits: 0,
+//       maximumFractionDigits: 2,
+//     }).format(amount);
+//   },
+//   sortable: true,
+// },
+//       // {
+//       //   name: "Invoiced Amount",
+//       //   selector: (row: any, i: any) => row.InvoiceAmount,
+//       //   sortable: true,
+//       // },
+//                                  {
+//   name: "Invoiced Amount",
+//   selector: (row: any, i: any) => {
+//     const amount = parseFloat(row.InvoiceAmount);
+//     if (isNaN(amount)) return "-";
+
+//     return new Intl.NumberFormat('en-US', {
+//       style: 'decimal',
+//       minimumFractionDigits: 0,
+//       maximumFractionDigits: 2,
+//     }).format(amount);
+//   },
+//   sortable: true,
+// },
+//       // {
+//       //   name: "Available Balance",
+//       //   selector: (row: any, i: any) => row.AvailableBalance,
+//       //   sortable: true,
+//       // },
+//                                        {
+//   name: "Available Balance",
+//   selector: (row: any, i: any) => {
+//     const amount = parseFloat(row.AvailableBalance);
+//     if (isNaN(amount)) return "-";
+
+//     return new Intl.NumberFormat('en-US', {
+//       style: 'decimal',
+//       minimumFractionDigits: 0,
+//       maximumFractionDigits: 2,
+//     }).format(amount);
+//   },
+//   sortable: true,
+// },
+
+
+//       {
+//         name: "Payment Status",
+//         selector: (row: any, i: any) => row.PaymentStatus,
+//         sortable: true,
+//       },
+//       {
+//         name: "Invoiced Date",
+//         selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.SubmittedDate),
+//         sortable: true,
+//          sortFunction: (a: any, b: any) =>
+//            new Date(a.SubmittedDate).getTime() -
+//            new Date(b.SubmittedDate).getTime()
+//       },
+//       {
+//         name: "Created By",
+//         selector: (row: any, i: any) => row.Author,
+//         sortable: true,
+//       },
+
+//       {
+//         name: "Created Date",
+//         selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.Created),
+//         sortable: true,
+//          sortFunction: (a: any, b: any) =>
+//            new Date(a.Created).getTime() -
+//            new Date(b.Created).getTime()
+//       },
+ {
+    field: "Id",
+    headerName: "Edit",
+    sortable: false,
+    filter: false,
+    width: 60,
+    minWidth: 60,
+    maxWidth: 60,
+    cellRenderer: (params: any) => (
+      <div style={{ paddingLeft: "10px" }}>
+        <NavLink
+          title="Edit"
+          className="csrLink ms-draggable"
+          to={`/InvoiceForm/${params.data.Id}`}
+        >
+          <FontAwesomeIcon icon={faEdit} />
+        </NavLink>
+      </div>
+    ),
   },
-  sortable: true,
-},
-      // {
-      //   name: "Invoiced Amount",
-      //   selector: (row: any, i: any) => row.InvoiceAmount,
-      //   sortable: true,
-      // },
-                                 {
-  name: "Invoiced Amount",
-  selector: (row: any, i: any) => {
-    const amount = parseFloat(row.InvoiceAmount);
-    if (isNaN(amount)) return "-";
 
-    return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
+  {
+    field: "ProposalFor",
+    headerName: "Location",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
   },
-  sortable: true,
-},
-      // {
-      //   name: "Available Balance",
-      //   selector: (row: any, i: any) => row.AvailableBalance,
-      //   sortable: true,
-      // },
-                                       {
-  name: "Available Balance",
-  selector: (row: any, i: any) => {
-    const amount = parseFloat(row.AvailableBalance);
-    if (isNaN(amount)) return "-";
 
-    return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
+  {
+    field: "ClientName",
+    headerName: "Client Name",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
   },
-  sortable: true,
-},
+
+  {
+    field: "InvoiceType",
+    headerName: "Invoice For",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "ProposalID",
+    headerName: "PO Number",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "TotalPo",
+    headerName: "Total PO Value",
+    sortable: true,
+    filter: "agNumberColumnFilter",
+    resizable: true,
+    valueFormatter: (params: any) => {
+      const amount = parseFloat(params.value);
+      if (isNaN(amount)) return "-";
+      return new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    },
+  },
+
+  {
+    field: "InvoiceAmount",
+    headerName: "Invoiced Amount",
+    sortable: true,
+    filter: "agNumberColumnFilter",
+    resizable: true,
+    valueFormatter: (params: any) => {
+      const amount = parseFloat(params.value);
+      if (isNaN(amount)) return "-";
+      return new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    },
+  },
+
+  {
+    field: "AvailableBalance",
+    headerName: "Available Balance",
+    sortable: true,
+    filter: "agNumberColumnFilter",
+    resizable: true,
+    valueFormatter: (params: any) => {
+      const amount = parseFloat(params.value);
+      if (isNaN(amount)) return "-";
+      return new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    },
+  },
+
+  {
+    field: "PaymentStatus",
+    headerName: "Payment Status",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "SubmittedDate",
+    headerName: "Invoiced Date",
+    sortable: true,
+    filter: "agDateColumnFilter",
+    resizable: true,
+    valueFormatter: (params: any) =>
+      params.value ? DateUtilities.getDateMMDDYYYY(params.value) : "-",
+    comparator: (valueA: any, valueB: any) =>
+      new Date(valueA).getTime() - new Date(valueB).getTime(),
+  },
+
+  {
+    field: "Author",
+    headerName: "Created By",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+    valueGetter: (params: any) =>
+      params.data.Author?.Title || params.data.Author || "-",
+  },
+
+  {
+    field: "Created",
+    headerName: "Created Date",
+    sortable: true,
+    filter: "agDateColumnFilter",
+    resizable: true,
+    valueFormatter: (params: any) =>
+      params.value ? DateUtilities.getDateMMDDYYYY(params.value) : "-",
+    comparator: (valueA: any, valueB: any) =>
+      new Date(valueA).getTime() - new Date(valueB).getTime(),
+  },
 
 
-      {
-        name: "Payment Status",
-        selector: (row: any, i: any) => row.PaymentStatus,
-        sortable: true,
-      },
-      {
-        name: "Invoiced Date",
-        selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.SubmittedDate),
-        sortable: true,
-         sortFunction: (a: any, b: any) =>
-           new Date(a.SubmittedDate).getTime() -
-           new Date(b.SubmittedDate).getTime()
-      },
-      {
-        name: "Created By",
-        selector: (row: any, i: any) => row.Author,
-        sortable: true,
-      },
-
-      {
-        name: "Created Date",
-        selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.Created),
-        sortable: true,
-         sortFunction: (a: any, b: any) =>
-           new Date(a.Created).getTime() -
-           new Date(b.Created).getTime()
-      },
 
     ]
 
@@ -519,7 +670,29 @@ private getYears = (data: any[]) => {
               {/* <div className="light-box border-box-shadow mx-2 table-head-1st-td py-2 right-search-table"> */}
                <div className="border-box-shadow light-box table-responsive dataTables_wrapper-overflow right-search-table py-2">
 
-                <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={this.handleRowClicked} ></TableGenerator>
+                {/* <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={this.handleRowClicked} ></TableGenerator> */}
+                   <AGGridDataTable
+                      data={this.state.data}
+                      columns={columns}
+                      showExportExcel={false}
+                      showAddButton={false}
+                      customBtnClass='px-1 text-right'
+                      btnDivID=''
+                      btnSpanID=''
+                      btnCaption=" New"
+                      btnTitle=''
+                      searchBoxLeft={true}
+                      onRowClicked={(event: any) => this.handleRowClicked(event.data)} // <-- fix here
+                      domLayout="normal"
+                      suppressColumnVirtualization={true}
+                      ensureDomOrder={true}
+                      suppressHorizontalScroll={false}
+                      suppressSizeToFit={true}
+                      suppressColumnHiding={true}
+                      suppressAutoSize={true}
+                      suppressColumnMoveAnimation={true}
+                      suppressMovableColumns={true}
+                    />
               </div>
               </div>
             </div>

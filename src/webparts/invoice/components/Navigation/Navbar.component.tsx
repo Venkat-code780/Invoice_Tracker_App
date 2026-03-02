@@ -145,11 +145,11 @@ private setAccordionFromPath = () => {
                 className={`accordion-header ${activeAccordion === 'NewDashboard' ? 'active' : ''}`}
                 onClick={() => this.toggleAccordion('NewDashboard')}
               >
-                 <img src={Icons.Reports} height={18} width={18}  className={`nav-icons ${activeAccordion === 'NewDashboard' ? 'icon-white' : ''}`} ></img> Home {activeAccordion === 'NewDashboard' ? <span className='span-angle-right'> <FontAwesomeIcon icon={faChevronDown}></FontAwesomeIcon></span>:<span className='span-angle-right'><FontAwesomeIcon icon={faAngleRight}></FontAwesomeIcon></span>}
+                 <img src={Icons.newDashboardhome} height={18} width={18}  className={`nav-icons ${activeAccordion === 'NewDashboard' ? 'icon-white' : ''}`} ></img> Home {activeAccordion === 'NewDashboard' ? <span className='span-angle-right'> <FontAwesomeIcon icon={faChevronDown}></FontAwesomeIcon></span>:<span className='span-angle-right'><FontAwesomeIcon icon={faAngleRight}></FontAwesomeIcon></span>}
               </button>
               {activeAccordion === 'NewDashboard' && (
                 <ul className="submenu">
-                  <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/NewDashboard"><img src={Icons.Reports} height={18} width={18} className='nav-icons' ></img> Dashboard</NavLink></li>
+                  <li><NavLink className={({isActive})=>isActive? 'nav-click':''} to="/NewDashboard"><img src={Icons.newDashboardform} height={18} width={18} className='nav-icons' ></img> Dashboard</NavLink></li>
                 </ul>
               )}
             </li>

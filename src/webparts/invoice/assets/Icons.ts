@@ -11,6 +11,8 @@ const PO = require('./PO.png');
 const ProjectStatus = require('./ProjectStatus.png');
 const Invoice = require('./Invoice.png');
 const unLink = require('./unLink.png');
+const newDashboardhome=require('./dashboardhome.png');
+const newDashboardform =require('./Dashboardrounded.png')
 
 export const Icons = {
   Masters: Masters,
@@ -25,7 +27,9 @@ export const Icons = {
   PO: PO,
   ProjectStatus: ProjectStatus,
   Invoice: Invoice,
-  unLink:unLink
+  unLink:unLink,
+  newDashboardhome:newDashboardhome,
+  newDashboardform:newDashboardform
 
 };
 export default Icons;

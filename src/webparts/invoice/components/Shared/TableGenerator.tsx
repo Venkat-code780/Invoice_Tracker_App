@@ -123,3 +123,5 @@ const TableGenerator = ({ columns, data, fileName, prvPageNumber,prvSort,prvDire
 };
 
 export default TableGenerator;
+
+

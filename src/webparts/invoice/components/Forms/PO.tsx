@@ -14,7 +14,8 @@ import { showLoader, hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component';
 import Icons from '../../assets/Icons';
 import SearchableDropdown from '../Shared/Searchbledropdown';
-import InputCheckBox from '../Shared/InputCheckBox';
+
+// import InputCheckBox from '../Shared/InputCheckBox';
 
 
 
@@ -61,7 +62,7 @@ class PO extends React.Component<IPOProps, IPOState> {
     History: [] as POHistory[],
     Location: '',
     Locations: [],
-
+    redirectToNewDashboard: false,
 
     ClientNames: [],
     ClientName: '',
@@ -924,14 +925,18 @@ class PO extends React.Component<IPOProps, IPOState> {
 
 
 
-
-
-
-
-
-
   private handleCancel = () => {
+const hash = window.location.hash;
+ const queryParams = hash.includes("?") ? new URLSearchParams(hash.split("?")[1]) : new URLSearchParams(""); 
+ const from = queryParams.get("from");
+    if(from === "dashboard"){
+       this.setState({redirectToNewDashboard:true});
+
+    
+    }
+    else{
     this.setState({ Homeredirect: true, ItemID: 0, errorMessage: "" });
+    }
   }
 
 
@@ -1262,12 +1267,12 @@ class PO extends React.Component<IPOProps, IPOState> {
       : num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   };
 
- private handleCheckbox = (event: React.ChangeEvent<HTMLInputElement>) => {
+//  private handleCheckbox = (event: React.ChangeEvent<HTMLInputElement>) => {
  
-    this.setState({ ischecked: event.target.checked });
+//     this.setState({ ischecked: event.target.checked });
 
 
-  }
+//   }
 
   private async getCurrentUserGroups() {
     try {
@@ -1469,14 +1474,17 @@ class PO extends React.Component<IPOProps, IPOState> {
     if (this.state.isUnAuthorized) {
       return <UnAuthorized spContext={this.props.spContext}></UnAuthorized>
     }
-    else if (this.state.Homeredirect) {
+    if(this.state.redirectToNewDashboard)
+    {
+      return <Navigate to="/NewDashboard" />;
+    }
+   if (this.state.Homeredirect) {
       // let message = this.state.modalText;
       let url = `/PO_View`;
       return <Navigate to={url} />;
     }
 
     else {
-
 
 
       return (
@@ -1681,14 +1689,14 @@ class PO extends React.Component<IPOProps, IPOState> {
                       </div>
                     </div>
 
-                    <div className='col-md-3 mt-2'>
+                    {/* <div className='col-md-3 mt-2'>
                       <InputCheckBox
                     name={"Is Bulk PO"}
                     checked={this.state.ischecked}
 
                     isforMasters={false} onChange={this.handleCheckbox} isdisable={false}  label={' Is Bulk PO'} />
 
-                    </div>
+                    </div> */}
 
 
                     <div className="col-md-12 mt-2">

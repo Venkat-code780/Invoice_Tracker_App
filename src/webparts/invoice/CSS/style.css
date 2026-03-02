@@ -613,7 +613,7 @@
     padding: 0 5px;
     background-color: white;
     z-index: 1;
-    font-size: 14px;
+    font-size: 15px;
   }
   label{
     color: #0b3e50;
@@ -681,13 +681,6 @@
       background: #ccc;
   }
  
-  
-  
-  
-  
-  
-  
-  
   
   .custom-control-input:checked~.custom-control-label::before{
     background-color: rgb(0, 128, 180);
@@ -847,7 +840,7 @@
 .btn.upload-btn {
   color: #0b3e50 !important;
   background-color: transparent !important;
-   padding: 6px 14px !important;
+   border: 1px solid #0b3e50;
   /* thinner border */
   border-radius: 0 !important;
   transition: all 0.3s ease;
@@ -2524,7 +2517,7 @@ display: "none"
 
 .submenu li a.nav-click {
       font-weight: 700;
-    background-color: #eff8ff;
+    background-color: #dddddd;
     border-bottom: 2px solid #0d2f4b !important;
     border-radius: 0;
 }
@@ -2639,8 +2632,20 @@ padding-left: 10px !important;
   appearance: none !important;
 }
 
-select{
+/* select{
   appearance: auto !important;
+} */
+select.form-control {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  padding: 6px 40px 6px 12px;
+
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 20 20' fill='black' xmlns='http://www.w3.org/2000/svg'><path d='M5 7l5 5 5-5'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
 }
 button.SubmitButtons:focus-visible {
     /* background-color: #0b3e50 !important; */
@@ -2736,3 +2741,53 @@ button.SubmitButtons:focus-visible {
     border-right: 8px solid transparent;
     border-top: 8px solid #0b3e50;
 }
+.react-datepicker-wrapper {
+    display: block;
+}
+
+
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* Delivered */
+.status-badge.delivered {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+/* Completed */
+.status-badge.completed {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* In Progress */
+.status-badge.inprogress {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+.status-badge.rejected { 
+background-color: #dc2626 !important;
+color: white !important;
+}
+
+/* Date picker styles */
+
+.react-datepicker__month-read-view--down-arrow,
+.react-datepicker__month-year-read-view--down-arrow,
+.react-datepicker__year-read-view--down-arrow {
+  right: -14px;
+  top: 7px;
+}
+ 
+.react-datepicker__navigation:hover {
+  background-color: transparent !important;
+  filter: brightness(0.5) !important;
+}
+ 

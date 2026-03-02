@@ -2,7 +2,7 @@ import * as React from 'react';
 import { sp, SPHttpClient } from '@pnp/sp/presets/all';
 import ModalPopUp from '../Shared/ModalPopUp';
 import InputText from '../Shared/InputText';
-import TableGenerator from '../Shared/TableGenerator';
+// import TableGenerator from '../Shared/TableGenerator';
 import formValidation from '../Utilities/Formvalidator';
 import { NavLink } from 'react-router-dom';
 import { FontAwesomeIcon} from '@fortawesome/react-fontawesome';
@@ -12,6 +12,7 @@ import { ControlType } from '../Utilities/Constants';
 import { showToast } from '../Utilities/toastHelper';
 import { showLoader,hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component'
+import AGGridDataTable from '../Shared/AGGridDataTable';
 
 export interface LocationProps {
   match: any;
@@ -327,28 +328,60 @@ private insertorupdateListitem = async (formData: any, list: any) => {
       // }
     let columns = [
       {
-        name: "Edit",
-        //selector: "Id",
-        selector: (row: { Id: any; }, i: any) => row.Id,
-        cell: (record: { Id: any; }) => {
-          return (
-            <React.Fragment>
-              <div style={{ paddingLeft: '10px' }}>
-                <NavLink title="Edit" className="csrLink ms-draggable" to={`/Location/${record.Id}`}>
-                  <FontAwesomeIcon icon={faEdit} onClick={() => { this.onEditClickHandler(record.Id); }}></FontAwesomeIcon>
-                </NavLink>
-              </div>
-            </React.Fragment>
-          );
-        }
+    field: "Id",
+    headerName: "Edit",
+    sortable: false,
+    filter: false,
+    width: 80,
+    minWidth: 65,
+    maxWidth: 80,
+    cellRenderer: (params: any) => {
+      const record = params.data;
+      return (
+        <div style={{ paddingLeft: "10px" }}>
+          <NavLink title="Edit" className="csrLink ms-draggable" to={`/Location/${record.Id}`}>
+          <FontAwesomeIcon
+            icon={faEdit}
+            onClick={() => this.onEditClickHandler(params.data.Id)}
+          />
+          </NavLink>
+        </div>
+      );
+    },
+  },
+  {
+    field: "Title",
+    headerName: "Location",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+    minWidth: 150,
+    width: 200,
+    getQuickFilterText: (params: any) => params.value || "",
+  },
+      // {
+      //   name: "Edit",
+      //   //selector: "Id",
+      //   selector: (row: { Id: any; }, i: any) => row.Id,
+      //   cell: (record: { Id: any; }) => {
+      //     return (
+      //       <React.Fragment>
+      //         <div style={{ paddingLeft: '10px' }}>
+      //           <NavLink title="Edit" className="csrLink ms-draggable" to={`/Location/${record.Id}`}>
+      //             <FontAwesomeIcon icon={faEdit} onClick={() => { this.onEditClickHandler(record.Id); }}></FontAwesomeIcon>
+      //           </NavLink>
+      //         </div>
+      //       </React.Fragment>
+      //     );
+      //   }
       
-      },
-      {
-        name: "Location",
-        //selector: 'Title',
-        selector: (row:any, i:any) => row.Title,
-        sortable: true
-      }
+      // },
+      // {
+      //   name: "Location",
+      //   //selector: 'Title',
+      //   selector: (row:any, i:any) => row.Title,
+      //   sortable: true
+      // }
     ];
       if (this.state.isUnAuthorized) {
         hideLoader();
@@ -420,7 +453,30 @@ private insertorupdateListitem = async (formData: any, list: any) => {
                   </div>
 
                   <div className="light-box border-box-shadow mx-2 table-head-1st-td right-search-table py-2">
-                    <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={(row:any)=>this.onEditClickHandler(row.Id)} ></TableGenerator>
+                    {/* <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={(row:any)=>this.onEditClickHandler(row.Id)} ></TableGenerator> */}
+                      <AGGridDataTable
+                        data={this.state.data}
+                        columns={columns}
+                        showExportExcel={false}
+                        showAddButton={false}
+                        customBtnClass='px-1 text-right'
+                        // navigateOnBtnClick={this.state.ItemId > 0 ? ((this.state.formStatus == "In-Draft" || this.state.formStatus == "Rejected") ? `/ExpenseMultiStepForm/${this.state.ItemId}` : `/ExpenseForm/${this.state.ItemId}`) : ((this.state.formStatus == "In-Draft" || this.state.formStatus == "Rejected") ? "/ExpenseMultiStepForm" : "/ExpenseForm")}
+                        btnDivID=''
+                        btnSpanID=''
+                        btnCaption=" New"
+                        btnTitle=''
+                        searchBoxLeft={true}
+                        onRowClicked={(event:any) => this.onEditClickHandler(event.data.Id)}
+                        domLayout="normal"
+                        suppressColumnVirtualization={true}
+                        ensureDomOrder={true}
+                        suppressHorizontalScroll={false}
+                        suppressSizeToFit={true}
+                        suppressColumnHiding={true}
+                        suppressAutoSize={true}
+                        suppressColumnMoveAnimation={true}
+                        suppressMovableColumns={true}
+                      />
                   </div>
                 </div>
               </div>

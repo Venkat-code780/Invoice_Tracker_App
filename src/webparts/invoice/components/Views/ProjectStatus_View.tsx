@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { sp, SPHttpClient } from '@pnp/sp/presets/all';
-import TableGenerator from '../Shared/TableGenerator'; // Adjusted path to match the correct module location
+// import TableGenerator from '../Shared/TableGenerator'; // Adjusted path to match the correct module location
 import { Navigate, NavLink } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit } from '@fortawesome/free-solid-svg-icons';
@@ -8,6 +8,7 @@ import DateUtilities from '../Utilities/Dateutilities';
 import { showLoader, hideLoader } from '../Shared/Loader';
 import UnAuthorized from '../Shared/UnAuthorized.Component';
 import Icons from '../../assets/Icons';
+import AGGridDataTable from '../Shared/AGGridDataTable';
 
 export interface ProjectStatusViewProps {
 
@@ -322,11 +323,16 @@ class ProjectStatus extends React.Component<ProjectStatusViewProps, ProjectStatu
     this.setState({ data: filteredData, allYears: allYears, allData: data, SaveUpdateText: 'Submit' });
     hideLoader();
   }
-  private handleRowClicked = (row: any, Id?: any) => {
-    let ID = row.Id ? row.Id : Id;
-    this.setState({ ItemID: ID, redirect: true });
-  }
-
+  // private handleRowClicked = (row: any, Id?: any) => {
+  //   let ID = row.Id ? row.Id : Id;
+  //   this.setState({ ItemID: ID, redirect: true });
+  // }
+ private handleRowClicked = (row: any) => {
+    this.setState({
+      ItemID: row.Id,
+      redirect: true
+    });
+  };
 
   // private async getCurrentUserGroups() {
   //   try {
@@ -495,86 +501,213 @@ class ProjectStatus extends React.Component<ProjectStatusViewProps, ProjectStatu
   public render() {
 
     let columns = [
-      {
-        name: "Edit",
-        //selector: "Id",
-        selector: (row: { Id: any; }, i: any) => row.Id,
-        cell: (record: { Id: any; }) => {
-          return (
-            <React.Fragment>
-              <div style={{ paddingLeft: '10px' }}>
-                <NavLink title="Edit" className="csrLink ms-draggable" to={`/ProjectStatus/${record.Id}`}>
-                  <FontAwesomeIcon icon={faEdit} ></FontAwesomeIcon>
-                </NavLink>
-              </div>
-            </React.Fragment>
-          );
-        },
-        width:'60px',
-      },
+      // {
+      //   name: "Edit",
+      //   //selector: "Id",
+      //   selector: (row: { Id: any; }, i: any) => row.Id,
+      //   cell: (record: { Id: any; }) => {
+      //     return (
+      //       <React.Fragment>
+      //         <div style={{ paddingLeft: '10px' }}>
+      //           <NavLink title="Edit" className="csrLink ms-draggable" to={`/ProjectStatus/${record.Id}`}>
+      //             <FontAwesomeIcon icon={faEdit} ></FontAwesomeIcon>
+      //           </NavLink>
+      //         </div>
+      //       </React.Fragment>
+      //     );
+      //   },
+      //   width:'60px',
+      // },
 
+      // {
+      //   name: "Location",
+      //   selector: (row: any, i: any) => row.ProposalFor,
+      //   sortable: true,
+      // },
+      // {
+      //   name: "Client Name",
+      //   selector: (row: any, i: any) => row.ClientName,
+      //   sortable: true,
+      // },
+      // {
+      //   name: "Project Name",
+      //   selector: (row: any, i: any) => row.Title,
+      //   sortable: true,
+      // },
+      // {
+      //   name: "PO Number",
+      //   selector: (row: any, i: any) => row.PONumber,
+      //   sortable: true,
+      // },
+      // {
+      //   name: "Execution Type",
+      //   selector: (row: any, i: any) => row.ExecutionType,
+      //   sortable: true,
+      // },
+      // {
+      //   name: "Start Date",
+      //   selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.StartDate),
+      //   sortable: true,
+      //      sortFunction: (a: any, b: any) =>
+      //         new Date(a.StartDate).getTime() -
+      //         new Date(b.StartDate).getTime()
+      // },
+      // {
+      //   name: "End Date",
+      //   selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.EndDate),
+      //   sortable: true,
+      //    sortFunction: (a: any, b: any) =>
+      //         new Date(a.EndDate).getTime() -
+      //         new Date(b.EndDate).getTime()
+      // },
+      // {
+      //   name: "Project Status",
+      //   selector: (row: any, i: any) => row.ProjectStatus,
+      //   sortable: true,
+      // },
+      // {
+      //   name: "Created By",
+      //   selector: (row: any, i: any) => row.Author,
+      //   sortable: true,
+      // },
+      // {
+      //   name: "Created Date",
+      //   selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.Created),
+      //   sortable: true,
+      //            sortFunction: (a: any, b: any) =>
+      //         new Date(a.Created).getTime() -
+      //         new Date(b.Created).getTime()
+      // },
+     
       {
-        name: "Location",
-        selector: (row: any, i: any) => row.ProposalFor,
-        sortable: true,
-      },
-      {
-        name: "Client Name",
-        selector: (row: any, i: any) => row.ClientName,
-        sortable: true,
-      },
-      {
-        name: "Project Name",
-        selector: (row: any, i: any) => row.Title,
-        sortable: true,
-      },
-      {
-        name: "PO Number",
-        selector: (row: any, i: any) => row.PONumber,
-        sortable: true,
-      },
-      {
-        name: "Execution Type",
-        selector: (row: any, i: any) => row.ExecutionType,
-        sortable: true,
-      },
-      {
-        name: "Start Date",
-        selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.StartDate),
-        sortable: true,
-           sortFunction: (a: any, b: any) =>
-              new Date(a.StartDate).getTime() -
-              new Date(b.StartDate).getTime()
-      },
-      {
-        name: "End Date",
-        selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.EndDate),
-        sortable: true,
-         sortFunction: (a: any, b: any) =>
-              new Date(a.EndDate).getTime() -
-              new Date(b.EndDate).getTime()
-      },
-      {
-        name: "Project Status",
-        selector: (row: any, i: any) => row.ProjectStatus,
-        sortable: true,
-      },
-      {
-        name: "Created By",
-        selector: (row: any, i: any) => row.Author,
-        sortable: true,
-      },
-      {
-        name: "Created Date",
-        selector: (row: any, i: any) => DateUtilities.getDateMMDDYYYY(row.Created),
-        sortable: true,
-                 sortFunction: (a: any, b: any) =>
-              new Date(a.Created).getTime() -
-              new Date(b.Created).getTime()
-      },
+    field: "Id",
+    headerName: "Edit",
+    sortable: false,
+    filter: false,
+    width: 60,
+    minWidth: 60,
+    maxWidth: 60,
+    cellRenderer: (params: any) => (
+      <div style={{ paddingLeft: "10px" }}>
+        <NavLink
+          title="Edit"
+          className="csrLink ms-draggable"
+          to={`/ProjectStatus/${params.data.Id}`}
+        >
+          <FontAwesomeIcon icon={faEdit} />
+        </NavLink>
+      </div>
+    ),
+  },
 
+  {
+    field: "ProposalFor",
+    headerName: "Location",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
 
+  {
+    field: "ClientName",
+    headerName: "Client Name",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
 
+  {
+    field: "Title",
+    headerName: "Project Name",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "PONumber",
+    headerName: "PO Number",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "ExecutionType",
+    headerName: "Execution Type",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+  },
+
+  {
+    field: "StartDate",
+    headerName: "Start Date",
+    sortable: true,
+    filter: "agDateColumnFilter",
+    resizable: true,
+    valueFormatter: (params: any) =>
+      params.value ? DateUtilities.getDateMMDDYYYY(params.value) : "-",
+    comparator: (valueA: any, valueB: any) =>
+      new Date(valueA).getTime() - new Date(valueB).getTime(),
+  },
+
+  {
+    field: "EndDate",
+    headerName: "End Date",
+    sortable: true,
+    filter: "agDateColumnFilter",
+    resizable: true,
+    valueFormatter: (params: any) =>
+      params.value ? DateUtilities.getDateMMDDYYYY(params.value) : "-",
+    comparator: (valueA: any, valueB: any) =>
+      new Date(valueA).getTime() - new Date(valueB).getTime(),
+  },
+
+  {
+    field: "ProjectStatus",
+    headerName: "Project Status",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+     cellRenderer: (params: any) => {
+    const status = params.value;
+
+    let className = "status-badge";
+
+    if (status === "Delivered") {
+      className += " delivered";
+    } else if (status === "Completed") {
+      className += " completed";
+    } else {
+      className += " inprogress";
+    }
+
+    return <span className={className}>{status}</span>;
+  }
+  },
+
+  {
+    field: "Author",
+    headerName: "Created By",
+    sortable: true,
+    filter: "agTextColumnFilter",
+    resizable: true,
+    valueGetter: (params: any) =>
+      params.data.Author?.Title || params.data.Author || "-",
+  },
+
+  {
+    field: "Created",
+    headerName: "Created Date",
+    sortable: true,
+    filter: "agDateColumnFilter",
+    resizable: true,
+    valueFormatter: (params: any) =>
+      params.value ? DateUtilities.getDateMMDDYYYY(params.value) : "-",
+    comparator: (valueA: any, valueB: any) =>
+      new Date(valueA).getTime() - new Date(valueB).getTime(),
+  },
 
 
     ]
@@ -625,8 +758,29 @@ class ProjectStatus extends React.Component<ProjectStatusViewProps, ProjectStatu
               <div className="border-box-shadow light-box table-responsive dataTables_wrapper-overflow right-search-table py-2">
 
 
-
-                  <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={this.handleRowClicked} ></TableGenerator>
+                  {/* <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={this.handleRowClicked} ></TableGenerator> */}
+                    <AGGridDataTable
+                      data={this.state.data}
+                      columns={columns}
+                      showExportExcel={false}
+                      showAddButton={false}
+                      customBtnClass='px-1 text-right'
+                      btnDivID=''
+                      btnSpanID=''
+                      btnCaption=" New"
+                      btnTitle=''
+                      searchBoxLeft={true}
+                      onRowClicked={(event: any) => this.handleRowClicked(event.data)} // <-- fix here
+                      domLayout="normal"
+                      suppressColumnVirtualization={true}
+                      ensureDomOrder={true}
+                      suppressHorizontalScroll={false}
+                      suppressSizeToFit={true}
+                      suppressColumnHiding={true}
+                      suppressAutoSize={true}
+                      suppressColumnMoveAnimation={true}
+                      suppressMovableColumns={true}
+                    />
                 </div>
                  </div>
                 </div>

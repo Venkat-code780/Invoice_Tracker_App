@@ -18,6 +18,7 @@ import Icons from '../../assets/Icons';
 import SearchableDropdown from '../Shared/Searchbledropdown';
 
 
+
 // import DatePicker from 'react-datepicker';
 
 
@@ -759,7 +760,6 @@ proposalTitleOri:''
   
     }
    
-    
     else if (isBilling) {
       // Fetch user locations from the billing team
       userLoc = Array.from(new Set(billingData.map(b => b.Location)));
@@ -800,11 +800,6 @@ proposalTitleOri:''
       hideLoader();
     }
   }
-
-
-
-
-
 
   private handleCancel = () => {
     this.setState({ Homeredirect: true, ItemID: 0, errorMessage: "" });
@@ -914,39 +909,111 @@ private handleChangeEstHours = async (event: any, actionMeta?: any) => {
   }
   }
 
-  private fetchTitleofProposalBasedOnProjects = (selectedLabel: string, selectedproposal: string) => {
-     try{
+fetchTitleofProposalBasedOnProjects = async (
+  selectedLabel: string,
+  selectedproposal: string
+) => {
+  try {
+    const Proposallist = 'ProposalDetails';
     const EstimationsList = 'Estimations';
-    sp.web.lists.getByTitle(EstimationsList).items.filter(`TitleOfTheProject eq '${selectedLabel}' and EstimationStatus eq 'Submitted' and Status ne 'Rejected' and EstimationFor eq '${this.state.ProposalFor}'`).select('TitleoftheEstimation', 'Id').top(2000).get().then((Response: any[]) => {
-      console.log(Response);
-      const { isEditMode } = this.state;
-        const uniqueProjectsMap = new Map<string, any>();
-           Response.forEach(item => {
-          if (!uniqueProjectsMap.has(item.TitleoftheEstimation)) {
-            uniqueProjectsMap.set(item.TitleoftheEstimation, {
-              label: item.TitleoftheEstimation,
-              value: isEditMode ? item.TitleoftheEstimation : item.Id
-            });
-          }
-        });
-      // const ProposalOptions = Response.map(item => ({
-      //   label: item.TitleoftheEstimation,
-      //   value: isEditMode ? item.TitleoftheEstimation : item.Id
-      // }));
-      const ProposalOptions = Array.from(uniqueProjectsMap.values());
-      this.setState({
-        TitleOfProposals: ProposalOptions,
-        TitleoftheProposal: selectedproposal ?? '' // Set the selected proposal name if provided
+    const { isEditMode } = this.state;
 
-      });
+    showLoader();
+
+    // 🔥 Fetch both lists at the same time
+    const [existingProposals, estimations] = await Promise.all([
+      sp.web.lists
+        .getByTitle(Proposallist)
+        .items
+        .select('Proposal')
+        .top(5000)
+        .get(),
+
+      sp.web.lists
+        .getByTitle(EstimationsList)
+        .items
+        .filter(`TitleOfTheProject eq '${selectedLabel}' 
+          and EstimationStatus eq 'Submitted' 
+          and Status ne 'Rejected' 
+          and EstimationFor eq '${this.state.ProposalFor}'`)
+        .select('TitleoftheEstimation', 'Id')
+        .top(2000)
+        .get()
+    ]);
+
+    // ✅ Store existing proposal titles in Set (fast lookup)
+    const existingProposalTitles = new Set(
+      existingProposals.map(item => item.Proposal)
+    );
+
+    // ✅ Remove duplicates + already existing proposals
+    const uniqueProjectsMap = new Map<string, any>();
+
+    estimations.forEach(item => {
+      const title = item.TitleoftheEstimation;
+
+      if (
+        title &&
+        !uniqueProjectsMap.has(title) &&
+        !existingProposalTitles.has(title) // 🚫 Skip if already exists
+      ) {
+        uniqueProjectsMap.set(title, {
+          label: title,
+          value: isEditMode ? title : item.Id
+        });
+      }
     });
-     }
-     catch (error){
-        console.log("Error in data fetching" + error);
-     }finally{
-      hideLoader();
-     }
+
+    const ProposalOptions = Array.from(uniqueProjectsMap.values());
+
+    this.setState({
+      TitleOfProposals: ProposalOptions,
+      TitleoftheProposal: selectedproposal ?? ''
+    });
+
+  } catch (error) {
+    console.error("Error in data fetching:", error);
+  } finally {
+    hideLoader();
   }
+};
+
+
+
+  // private fetchTitleofProposalBasedOnProjects = (selectedLabel: string, selectedproposal: string) => {
+  //    try{
+  //   const Proposallist= 'ProposalDetails'
+  //   const EstimationsList = 'Estimations';
+  //   sp.web.lists.getByTitle(EstimationsList).items.filter(`TitleOfTheProject eq '${selectedLabel}' and EstimationStatus eq 'Submitted' and Status ne 'Rejected' and EstimationFor eq '${this.state.ProposalFor}'`).select('TitleoftheEstimation', 'Id').top(2000).get().then((Response: any[]) => {
+     
+  //     const { isEditMode } = this.state;
+  //       const uniqueProjectsMap = new Map<string, any>();
+  //          Response.forEach(item => {
+  //         if (!uniqueProjectsMap.has(item.TitleoftheEstimation)) {
+  //           uniqueProjectsMap.set(item.TitleoftheEstimation, {
+  //             label: item.TitleoftheEstimation,
+  //             value: isEditMode ? item.TitleoftheEstimation : item.Id
+  //           });
+  //         }
+  //       });
+  //     // const ProposalOptions = Response.map(item => ({
+  //     //   label: item.TitleoftheEstimation,
+  //     //   value: isEditMode ? item.TitleoftheEstimation : item.Id
+  //     // }));
+  //     const ProposalOptions = Array.from(uniqueProjectsMap.values());
+  //     this.setState({
+  //       TitleOfProposals: ProposalOptions,
+  //       TitleoftheProposal: selectedproposal ?? '' // Set the selected proposal name if provided
+
+  //     });
+  //   });
+  //    }
+  //    catch (error){
+  //       console.log("Error in data fetching" + error);
+  //    }finally{
+  //     hideLoader();
+  //    }
+  // }
 
   private fetchProjectsBasedOnProposalfor = (selectedProposal: string, selectedproject: string) => {
     try{
@@ -1266,7 +1333,6 @@ private handleChangeTitleOfProject = (event: any, actionMeta?: any) => {
       this.setState({ Amount: rawValue });
     }
   };
-  
 
   // private handleCheckbox = (event: React.ChangeEvent<HTMLInputElement>) => {
   //   let stateobj = this.state;
@@ -1387,9 +1453,6 @@ formatDDMMYYYYToMMDDYYYY(datetime: string): string {
 
   return timePart ? `${formatted}, ${timePart}` : formatted;
 }
-
-
-
 
 
 
