@@ -338,7 +338,7 @@ private insertorupdateListitem = async (formData: any, list: any) => {
     cellRenderer: (params: any) => {
       const record = params.data;
       return (
-        <div style={{ paddingLeft: "10px" }}>
+        <div>
           <NavLink title="Edit" className="csrLink ms-draggable" to={`/Location/${record.Id}`}>
           <FontAwesomeIcon
             icon={faEdit}
@@ -452,7 +452,7 @@ private insertorupdateListitem = async (formData: any, list: any) => {
                     </div>
                   </div>
 
-                  <div className="light-box border-box-shadow mx-2 table-head-1st-td right-search-table py-2">
+                  <div className="light-box border-box-shadow mx-2 table-head-1st-td right-search-table mb-3">
                     {/* <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={(row:any)=>this.onEditClickHandler(row.Id)} ></TableGenerator> */}
                       <AGGridDataTable
                         data={this.state.data}

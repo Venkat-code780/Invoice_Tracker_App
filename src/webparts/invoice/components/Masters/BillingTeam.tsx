@@ -560,7 +560,7 @@ private insertorupdateListitem = async (formData: any, list: any) => {
     width: 80,
     minWidth: 65,
     cellRenderer: (params: any) => (
-      <div style={{ paddingLeft: "10px" }}>
+      <div>
         <NavLink title="Edit" className="csrLink ms-draggable" to={`/BillingTeam/${params.data.Id}`}>
           <FontAwesomeIcon
             icon={faEdit}
@@ -644,7 +644,7 @@ private insertorupdateListitem = async (formData: any, list: any) => {
                       <div className="row pt-2 px-2">
                         <div className="col-md-4">
                           <div className="light-text">
-                            <label>Location <span className="mandatoryhastrick">*</span></label>
+                            <label>Location<span className="mandatoryhastrick">*</span></label>
                             <select className="form-control" id='ddlLocation' required={true} name="Location" value={this.state.Location} title="Location" onChange={this.handleChange} itemRef='Location' ref={this.inputLocation}>
                               <option value=''>None</option>
                               {this.state.Locations.map((location: any, index: any) => (
@@ -656,7 +656,7 @@ private insertorupdateListitem = async (formData: any, list: any) => {
                         </div>
                         <div className="col-md-4" >
                           <div className="light-text c-people-picker">
-                            <label className='lblPeoplepicker'>User <span className="mandatoryhastrick">*</span></label>
+                            <label className='lblPeoplepicker'>User<span className="mandatoryhastrick">*</span></label>
                             <div className="" id="divPeopleUser">
                               <PeoplePicker
                                 context={this.props.context}
@@ -701,7 +701,7 @@ private insertorupdateListitem = async (formData: any, list: any) => {
                   </div>
                 </div>
 
-                <div className="light-box border-box-shadow mx-2 table-head-1st-td right-search-table py-2">
+                <div className="light-box border-box-shadow mx-2 table-head-1st-td right-search-table mb-3">
                   {/* <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={(row: any) => this.onEditClickHandler(row.Id)} ></TableGenerator> */}
                     <AGGridDataTable
                       data={this.state.data}

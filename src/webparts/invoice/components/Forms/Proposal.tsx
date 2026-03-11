@@ -909,74 +909,74 @@ private handleChangeEstHours = async (event: any, actionMeta?: any) => {
   }
   }
 
-fetchTitleofProposalBasedOnProjects = async (
-  selectedLabel: string,
-  selectedproposal: string
-) => {
-  try {
-    const Proposallist = 'ProposalDetails';
-    const EstimationsList = 'Estimations';
-    const { isEditMode } = this.state;
+// fetchTitleofProposalBasedOnProjects = async (
+//   selectedLabel: string,
+//   selectedproposal: string
+// ) => {
+//   try {
+//     const Proposallist = 'ProposalDetails';
+//     const EstimationsList = 'Estimations';
+//     const { isEditMode } = this.state;
 
-    showLoader();
+//     showLoader();
 
-    // 🔥 Fetch both lists at the same time
-    const [existingProposals, estimations] = await Promise.all([
-      sp.web.lists
-        .getByTitle(Proposallist)
-        .items
-        .select('Proposal')
-        .top(5000)
-        .get(),
+//     // 🔥 Fetch both lists at the same time
+//     const [existingProposals, estimations] = await Promise.all([
+//       sp.web.lists
+//         .getByTitle(Proposallist)
+//         .items
+//         .select('Proposal')
+//         .top(5000)
+//         .get(),
 
-      sp.web.lists
-        .getByTitle(EstimationsList)
-        .items
-        .filter(`TitleOfTheProject eq '${selectedLabel}' 
-          and EstimationStatus eq 'Submitted' 
-          and Status ne 'Rejected' 
-          and EstimationFor eq '${this.state.ProposalFor}'`)
-        .select('TitleoftheEstimation', 'Id')
-        .top(2000)
-        .get()
-    ]);
+//       sp.web.lists
+//         .getByTitle(EstimationsList)
+//         .items
+//         .filter(`TitleOfTheProject eq '${selectedLabel}' 
+//           and EstimationStatus eq 'Submitted' 
+//           and Status ne 'Rejected' 
+//           and EstimationFor eq '${this.state.ProposalFor}'`)
+//         .select('TitleoftheEstimation', 'Id')
+//         .top(2000)
+//         .get()
+//     ]);
 
-    // ✅ Store existing proposal titles in Set (fast lookup)
-    const existingProposalTitles = new Set(
-      existingProposals.map(item => item.Proposal)
-    );
+//     // ✅ Store existing proposal titles in Set (fast lookup)
+//     const existingProposalTitles = new Set(
+//       existingProposals.map(item => item.Proposal)
+//     );
 
-    // ✅ Remove duplicates + already existing proposals
-    const uniqueProjectsMap = new Map<string, any>();
+//     // ✅ Remove duplicates + already existing proposals
+//     const uniqueProjectsMap = new Map<string, any>();
 
-    estimations.forEach(item => {
-      const title = item.TitleoftheEstimation;
+//     estimations.forEach(item => {
+//       const title = item.TitleoftheEstimation;
 
-      if (
-        title &&
-        !uniqueProjectsMap.has(title) &&
-        !existingProposalTitles.has(title) // 🚫 Skip if already exists
-      ) {
-        uniqueProjectsMap.set(title, {
-          label: title,
-          value: isEditMode ? title : item.Id
-        });
-      }
-    });
+//       if (
+//         title &&
+//         !uniqueProjectsMap.has(title) &&
+//         !existingProposalTitles.has(title) // 🚫 Skip if already exists
+//       ) {
+//         uniqueProjectsMap.set(title, {
+//           label: title,
+//           value: isEditMode ? title : item.Id
+//         });
+//       }
+//     });
 
-    const ProposalOptions = Array.from(uniqueProjectsMap.values());
+//     const ProposalOptions = Array.from(uniqueProjectsMap.values());
 
-    this.setState({
-      TitleOfProposals: ProposalOptions,
-      TitleoftheProposal: selectedproposal ?? ''
-    });
+//     this.setState({
+//       TitleOfProposals: ProposalOptions,
+//       TitleoftheProposal: selectedproposal ?? ''
+//     });
 
-  } catch (error) {
-    console.error("Error in data fetching:", error);
-  } finally {
-    hideLoader();
-  }
-};
+//   } catch (error) {
+//     console.error("Error in data fetching:", error);
+//   } finally {
+//     hideLoader();
+//   }
+// };
 
 
 
@@ -1015,6 +1015,77 @@ fetchTitleofProposalBasedOnProjects = async (
   //    }
   // }
 
+  fetchTitleofProposalBasedOnProjects = async (
+  selectedLabel: string,
+  selectedproposal: string
+) => {
+  try {
+    const Proposallist = 'ProposalDetails';
+    const EstimationsList = 'Estimations';
+    const { isEditMode } = this.state;
+
+    showLoader();
+
+    // 🔥 Fetch both lists at the same time
+    const [existingProposals, estimations] = await Promise.all([
+      sp.web.lists
+        .getByTitle(Proposallist)
+        .items
+        .select('Proposal')
+        .top(5000)
+        .get(),
+
+      sp.web.lists
+        .getByTitle(EstimationsList)
+        .items
+        .filter(`TitleOfTheProject eq '${selectedLabel}' 
+          and EstimationStatus eq 'Submitted' 
+          and EstimationFor eq '${this.state.ProposalFor}'`)
+        .select('TitleoftheEstimation', 'Id')
+        .top(2000)
+        .get()
+    ]);
+
+    // ✅ Store existing proposal titles in Set (fast lookup)
+    const existingProposalTitles = new Set(
+      existingProposals.map(item => item.Proposal)
+    );
+
+    // ✅ Remove duplicates + already existing proposals, but allow current selection in edit mode
+    const uniqueProjectsMap = new Map<string, any>();
+
+    estimations.forEach(item => {
+      const title = item.TitleoftheEstimation;
+
+      if (
+        title &&
+        !uniqueProjectsMap.has(title) &&
+        (
+          !existingProposalTitles.has(title) || 
+          (isEditMode && title === selectedproposal) // allow current proposal in edit mode
+        )
+      ) {
+        uniqueProjectsMap.set(title, {
+          label: title,
+          value: isEditMode ? title : item.Id
+        });
+      }
+    });
+
+    const ProposalOptions = Array.from(uniqueProjectsMap.values());
+
+    this.setState({
+      TitleOfProposals: ProposalOptions,
+      TitleoftheProposal: selectedproposal ?? ''
+    });
+
+  } catch (error) {
+    console.error("Error in data fetching:", error);
+  } finally {
+    hideLoader();
+  }
+};
+
   private fetchProjectsBasedOnProposalfor = (selectedProposal: string, selectedproject: string) => {
     try{
     let SelectedClientName: string
@@ -1028,9 +1099,9 @@ fetchTitleofProposalBasedOnProjects = async (
     }
 
 
-    const EstimationsList = 'Estimations';
+  const EstimationsList = 'Estimations';
     sp.web.lists.getByTitle(EstimationsList).items.select("Id", "TitleOfTheProject", 'ClientName/Title','TitleOfTheProject','TitleoftheEstimation','EstimatedHour',
-      'ClientName/Id').expand("ClientName").filter(`EstimationFor eq '${selectedProposal}' and ClientName/Title eq '${SelectedClientName}' and EstimationStatus eq 'Submitted' and Status ne 'Rejected'`).top(2000).get().then((Response: any[]) => {
+      'ClientName/Id').expand("ClientName").filter(`EstimationFor eq '${selectedProposal}' and ClientName/Title eq '${SelectedClientName}' and EstimationStatus eq 'Submitted'`).top(2000).get().then((Response: any[]) => {
         console.log(Response);
         const { isEditMode } = this.state;
          if (this.state.isConsultantSelected || this.state.isSupportSelected ){
@@ -1044,7 +1115,7 @@ fetchTitleofProposalBasedOnProjects = async (
          else{
         // const projectOptions = Response.map(item => ({
         //   label: item.TitleOfTheProject,
-        //   value: isEditMode ? item.TitleOfTheProject : item.Id
+          //   value: isEditMode ? item.TitleOfTheProject : item.Id
         // }));
             const uniqueProjectsMap = new Map<string, any>();
         Response.forEach(item => {
@@ -1057,6 +1128,16 @@ fetchTitleofProposalBasedOnProjects = async (
         });
 
         const projectOptions = Array.from(uniqueProjectsMap.values());
+             if (isEditMode && selectedproject) {
+            const exists = projectOptions.some(p => p.label === selectedproject);
+            if (!exists) {
+              projectOptions.push({
+                label: selectedproject,
+                value: selectedproject
+              });
+            }
+          }
+
         this.setState({
           ProjectNames: projectOptions,
           ProjectName: selectedproject ?? '',
@@ -1074,6 +1155,11 @@ fetchTitleofProposalBasedOnProjects = async (
       hideLoader();
     }
   }
+
+
+
+
+
   private fetchClientsBasedOnLocation = async (selectedLocation: string, slectedclient: string) => {
     try{
       showLoader();
@@ -1526,10 +1612,7 @@ formatWithCommas = (value: string | number): string => {
 
 
           <div className="after-title"></div>
-          <div>
-          
-
-            <div className="light-box border-box-shadow mx-2">
+          <div className='pt-2'>
               <div className="row pt-2 px-2">
                 <div className="col-md-3">
                   <div className="light-text mb-2">
@@ -1760,7 +1843,7 @@ formatWithCommas = (value: string | number): string => {
               </div>
 
 
-            </div>
+     
 
 
 

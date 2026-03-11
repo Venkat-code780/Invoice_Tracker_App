@@ -456,9 +456,9 @@ private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any
                    and ClientName eq '${this.state.ClientName}' 
                    and Status eq 'In-Progress'`;
   }
-    sp.web.lists.getByTitle(POList).items.select("Id", "PONumber").filter(filterQuery).top(2000).get().then((Response: any[]) => {
+    sp.web.lists.getByTitle(POList).items.select("Id", "PONumber").filter(filterQuery).orderBy('Modified',false).top(2000).get().then((Response: any[]) => {
       const { isEditMode } = this.state;
-      const PONumberoptions = Response.map(item => ({
+       const PONumberoptions = Response.map(item => ({
         label: item.PONumber,
         value: item.PONumber
       }));
@@ -1269,12 +1269,11 @@ private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any
 
 
               <div className="after-title"></div>
-
-              <div className="light-box border-box-shadow mx-2">
+               <div className='pt-2'>
                 <div className="row pt-2 px-2">
                   <div className="col-md-3">
                     <div className="light-text">
-                      <label className="">Location <span className="mandatoryhastrick">*</span></label>
+                      <label className="">Location<span className="mandatoryhastrick">*</span></label>
                       <select className="form-control" id='ddllocation' required={true} name="Location" value={this.state.Location} onChange={this.handleChange} disabled={this.state.isEditMode || this.state.Locations.length === 1} title="Location" itemRef='Location' ref={this.inputLocation}>
                         <option value=''>None</option>
                         {this.state.Locations.map((location: any, index: any) => (
@@ -1303,7 +1302,7 @@ private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any
                   </div>
                   <div className="col-md-3">
                     <div className="light-text">
-                      <label >Project<span className="mandatoryhastrick">*</span></label>
+                      <label>Project<span className="mandatoryhastrick">*</span></label>
 
                       {/* <select className="form-control" required={true} name="ProjectName" value={this.state.ProjectName} disabled={this.state.isEditMode} onChange={this.handlePONumber} title="ProjectName" itemRef='ProjectName' ref={this.inputProjectName}>
                         <option value=''>None</option>
@@ -1428,6 +1427,7 @@ private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any
                   </div>
 
                 </div>
+                </div>
 
 
 
@@ -1475,7 +1475,7 @@ private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any
                 )}
 
 
-              </div>
+          
 
             </div>
 

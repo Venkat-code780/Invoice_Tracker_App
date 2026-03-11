@@ -1354,14 +1354,11 @@ formatWithCommasInvoiced = (value: string | number): string => {
 
 
           <div className="after-title"></div>
-         
-          
-
-            <div className="light-box border-box-shadow mx-2">
+          <div className='pt-2'>
               <div className="row pt-2 px-2">
                 <div className="col-md-3">
                   <div className="light-text">
-                    <label className="">Location <span className="mandatoryhastrick">*</span></label>
+                    <label className="">Location<span className="mandatoryhastrick">*</span></label>
                     <select className="form-control" id='ddllocation' required={true} name="Location" value={this.state.Location} onChange={this.handleChange} disabled={this.state.isEditMode || this.state.Locations.length === 1} title="Location" itemRef='Location' ref={this.inputLocation}>
                       <option value=''>None</option>
                       {this.state.Locations.map((location: any, index: any) => (
@@ -1484,7 +1481,7 @@ formatWithCommasInvoiced = (value: string | number): string => {
                   </div>                       
                                  <div className="col-md-3">
                                             <div className="light-text c-people-picker">
-                                             <label className='lblPeoplepicker'>Submitted By <span className="mandatoryhastrick">*</span></label>
+                                             <label className='lblPeoplepicker'>Submitted By<span className="mandatoryhastrick">*</span></label>
                                               <div className="" id="divPeopleUser">
                                               <PeoplePicker
                                                 context={this.props.context}
@@ -1524,7 +1521,7 @@ formatWithCommasInvoiced = (value: string | number): string => {
                     </div>
                      <div className="col-md-3">
                     <div className="light-text div-readonly">
-                      <label className="">Payment Date {this.state.InvoiceStatus=='Received' &&(<span className="mandatoryhastrick">*</span>)}</label>
+                      <label className="">Payment Date{this.state.InvoiceStatus=='Received' &&(<span className="mandatoryhastrick">*</span>)}</label>
                       <div className="custom-datepicker" id="DivPaymentDate">
                         <DatePicker onDatechange={(date: any)=>this.handleDateChange(date,'PaymentDate')} name={"PaymentDate"}   ref={this.inputPaymentDate} placeholder="MM/DD/YYYY" endDate={new Date()} selectedDate={this.state.PaymentDate} isDisabled={this.state.isEditMode && this.state.Receivedflag=='Received'} readonly={this.state.isEditMode && this.state.Receivedflag=='Received'} maxDate={new Date()} id={'txtPaymentDate'} title={"Payment Date"} />
                       </div>

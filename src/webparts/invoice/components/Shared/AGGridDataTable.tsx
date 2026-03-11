@@ -257,7 +257,7 @@ const onPaginationChanged = useCallback(() => {
         )}
       </div>}
       <div className="table-responsive dataTables_wrapper-overflow">
-        <div className="form-border-box p-2 mx-1 my-2">
+        <div className="form-border-box p-2 mx-1">
           <div className="row py-2">
             <div className="col-12 pe-0 text-end me-1">
               {props.showAddButton && (

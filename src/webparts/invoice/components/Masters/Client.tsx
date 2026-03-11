@@ -496,10 +496,11 @@ class Client2 extends React.Component<ClientProps, ClientState> {
         headerName: "Edit",
         sortable: false,
         filter: false,
-        width: 80,
-        minWidth: 65,
+         width: 65,
+         minWidth: 65,
+         maxWidth: 65,
         cellRenderer: (params: any) => (
-          <div style={{ paddingLeft: "10px" }}>
+          <div>
             <NavLink title="Edit" className="csrLink ms-draggable" to={`/Client/${params.data.Id}`}>
               <FontAwesomeIcon
                 icon={faEdit}
@@ -598,7 +599,7 @@ class Client2 extends React.Component<ClientProps, ClientState> {
                       <button type="button" id="btnSubmit" className="SubmitButtons btn" onClick={this.addNew}>Add</button>
                     </div>
                   </div> */}
-                  <div className="light-box border-box-shadow m-2 pb-2">
+                  <div className="light-box border-box-shadow mx-2 pb-2">
                     <div className={this.state.addNewProgram ? 'mx-2 activediv' : 'mx-2'}>
                       <div className="text-end py-2" id="">
                         <button type="button" id="btnSubmit" className="SubmitButtons btn" onClick={this.addNew}>Add</button>
@@ -624,7 +625,7 @@ class Client2 extends React.Component<ClientProps, ClientState> {
                           </div>
                           <div className="col-md-3">
                             <div className="light-text">
-                              <label>Location <span className="mandatoryhastrick">*</span></label>
+                              <label>Location<span className="mandatoryhastrick">*</span></label>
                               <select className="form-control" required={true} name="Location" value={this.state.Location} title="Location" onChange={this.handleChange} itemRef='Location' ref={this.inputLocation}>
                                 <option value=''>None</option>
                                 {this.state.Locations.map((location: any, index: any) => (
@@ -707,7 +708,7 @@ class Client2 extends React.Component<ClientProps, ClientState> {
                     </div>
                   </div>
 
-                  <div className="light-box border-box-shadow mx-2 table-head-1st-td right-search-table py-2">
+                  <div className="light-box border-box-shadow mx-2 table-head-1st-td right-search-table mb-3">
                     {/* <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={(row:any)=>this.onEditClickHandler(row.Id)} ></TableGenerator> */}
                     <AGGridDataTable
                       data={this.state.data}

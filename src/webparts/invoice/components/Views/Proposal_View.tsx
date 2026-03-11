@@ -104,7 +104,7 @@ class ProposalView extends React.Component<ProposalViewProps, ProposalViewState>
 
     // Add years from data, but only if they are >= 2021
     data.forEach(item => {
-      const year = new Date(item.SubmittedDate).getFullYear();
+      const year = new Date(item.Created).getFullYear();
       if (year >= startYear) {
         yearsSet.add(year);
       }
@@ -130,7 +130,7 @@ class ProposalView extends React.Component<ProposalViewProps, ProposalViewState>
       // } else {
       // Filter data based on the selected year
       const filteredData = this.state.allData.filter(
-        (item: { SubmittedDate: string }) => new Date(item.SubmittedDate).getFullYear().toString() === selectedYear
+        (item: { Created: string }) => new Date(item.Created).getFullYear().toString() === selectedYear
       );
       this.setState({ data: filteredData });
       // }
@@ -158,7 +158,7 @@ class ProposalView extends React.Component<ProposalViewProps, ProposalViewState>
     const allYears = this.getYears(response);
     const selectedYear = allYears[0].toString();
     const filteredData = selectedYear
-      ? data.filter((item: { SubmittedDate: string }) => new Date(item.SubmittedDate).getFullYear().toString() === selectedYear)
+      ? data.filter((item: { Created: string }) => new Date(item.Created).getFullYear().toString() === selectedYear)
       : data;
     this.setState({ data: filteredData, allYears: allYears, allData: data, SaveUpdateText: 'Submit' });
     // hideLoader();
@@ -424,7 +424,7 @@ class ProposalView extends React.Component<ProposalViewProps, ProposalViewState>
         minWidth: 60,
         maxWidth: 60,
         cellRenderer: (params: any) => (
-          <div style={{ paddingLeft: "10px" }}>
+          <div>
             <NavLink
               title="Edit"
               className="csrLink ms-draggable"
@@ -495,23 +495,23 @@ class ProposalView extends React.Component<ProposalViewProps, ProposalViewState>
         sortable: true,
         filter: "agTextColumnFilter",
         resizable: true,
-         cellRenderer: (params: any) => {
-    const status = params.value;
+  //        cellRenderer: (params: any) => {
+  //   const status = params.value;
 
-    let className = "status-badge"
+  //   let className = "status-badge"
 
-    if (status === "Approved") {
-      className += " completed";
-    } else if (status === "Rejected") {
-      className += " rejected";
-    } else {
-      className += " inprogress";
-    }
+  //   if (status === "Approved") {
+  //     className += " completed";
+  //   } else if (status === "Rejected") {
+  //     className += " rejected";
+  //   } else {
+  //     className += " inprogress";
+  //   }
 
-    return (
-       <span className={className}>{status}</span>
-    );
-  }
+  //   return (
+  //      <span className={className}>{status}</span>
+  //   );
+  // }
       },
 
       {
@@ -561,8 +561,8 @@ class ProposalView extends React.Component<ProposalViewProps, ProposalViewState>
                 </div>
                 <div className="after-title"></div>
                 <div className="px-3 View-Table">
-                  <div className="col-md-4 px-0">
-                    <div className="light-text mt-3 mb-2">
+                  <div className='row'><div className="col-md-2">
+                    <div className="light-text mt-4 mb-2">
                       <label color='#0b3e50'>Year</label>
                       <select className="form-control" id='ddlsearch' required={true} name="selectedYear" value={this.state.selectedYear} title="selectedYear" onChange={this.handleYearChange}>
 
@@ -579,11 +579,12 @@ class ProposalView extends React.Component<ProposalViewProps, ProposalViewState>
                       </select>
                     </div>
                   </div>
+                  </div>
 
                   {/*              
               <div className="light-box border-box-shadow mx-2 table-head-1st-td py-2 right-search-table"> */}
 
-                  <div className="border-box-shadow light-box table-responsive dataTables_wrapper-overflow right-search-table py-2">
+                  <div className="border-box-shadow light-box table-responsive dataTables_wrapper-overflow right-search-table mb-3">
 
 
                     {/* <TableGenerator columns={columns} data={this.state.data} fileName={'Location2'} onRowClick={this.handleRowClicked} ></TableGenerator> */}
