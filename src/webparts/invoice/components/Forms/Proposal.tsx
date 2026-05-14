@@ -114,7 +114,7 @@ proposalTitleOri:''
   inputProposalFor: React.RefObject<HTMLSelectElement>;
   inputProposalTitle: React.RefObject<HTMLSelectElement>;
   inputTitleoftheProject: React.RefObject<HTMLSelectElement>;
-  private inputSubmittedName: React.RefObject<PeoplePicker>;
+  private inputSubmittedName: React.RefObject<PeoplePicker> = React.createRef<PeoplePicker>();
   private inputAmount: any;
   private inputsubmittedDate: React.RefObject<HTMLInputElement>;
   private inputEstimatedHours: React.RefObject<HTMLInputElement>;
@@ -1041,7 +1041,7 @@ private handleChangeEstHours = async (event: any, actionMeta?: any) => {
         .filter(`TitleOfTheProject eq '${selectedLabel}' 
           and EstimationStatus eq 'Submitted' 
           and EstimationFor eq '${this.state.ProposalFor}'`)
-        .select('TitleoftheEstimation', 'Id')
+        .select('TitleoftheEstimation', 'Id','Created').orderBy('Created',false)
         .top(2000)
         .get()
     ]);
@@ -1101,7 +1101,7 @@ private handleChangeEstHours = async (event: any, actionMeta?: any) => {
 
   const EstimationsList = 'Estimations';
     sp.web.lists.getByTitle(EstimationsList).items.select("Id", "TitleOfTheProject", 'ClientName/Title','TitleOfTheProject','TitleoftheEstimation','EstimatedHour',
-      'ClientName/Id').expand("ClientName").filter(`EstimationFor eq '${selectedProposal}' and ClientName/Title eq '${SelectedClientName}' and EstimationStatus eq 'Submitted'`).top(2000).get().then((Response: any[]) => {
+      'ClientName/Id').expand("ClientName").filter(`EstimationFor eq '${selectedProposal}' and ClientName/Title eq '${SelectedClientName}' and EstimationStatus eq 'Submitted'`).orderBy("Created",false).top(2000).get().then((Response: any[]) => {
         console.log(Response);
         const { isEditMode } = this.state;
          if (this.state.isConsultantSelected || this.state.isSupportSelected ){

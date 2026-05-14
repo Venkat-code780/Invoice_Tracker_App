@@ -789,7 +789,7 @@ class Estimation extends React.Component<IEstimationsProps, IEstimationsState> {
 
       sp.web.lists.getByTitle(TrList).items
         .filter(`ClientName/Title eq '${selectedClient}'`).expand('ClientName')
-        .select('TitleOfTheProject', 'Id', 'ClientName/Title').top(2000)
+        .select('TitleOfTheProject', 'Id', 'ClientName/Title','Created').orderBy('Created',false).top(2000)
         .get()
         .then((Response: any[]) => {
           // Create a Map to ensure uniqueness by Title

@@ -19,7 +19,7 @@ const NewDashboard: React.FC<(INewDashboardProps)> = ({ spContext }) => {
   const [isDevUser, setIsDevUser] = React.useState(false);
   const [isSales, setIsSales] = React.useState(false);
   const [isAuthorized, setIsAuthorized] = React.useState<boolean | null>(null);
-
+  const [isBillingUser, setIsBillingUser] = React.useState(false);
 
   const navigate = useNavigate();
 
@@ -27,23 +27,23 @@ const NewDashboard: React.FC<(INewDashboardProps)> = ({ spContext }) => {
   //   fetchProposalDetails();
   //   fetchPOInvoiceDetails();
   // }, []);
-React.useEffect(() => {
-  const loadData = async () => {
-    showLoader();
-    try {
-      await Promise.all([
-        fetchProposalDetails(),
-        fetchPOInvoiceDetails()
-      ]);
-    } catch (error) {
-      console.error("Dashboard load error:", error);
-    } finally {
-      hideLoader();
-    }
-  };
+  React.useEffect(() => {
+    const loadData = async () => {
+      showLoader();
+      try {
+        await Promise.all([
+          fetchProposalDetails(),
+          fetchPOInvoiceDetails()
+        ]);
+      } catch (error) {
+        console.error("Dashboard load error:", error);
+      } finally {
+        hideLoader();
+      }
+    };
 
-  loadData();
-}, []);
+    loadData();
+  }, []);
 
 
   // Fetch Proposals for Pending PO
@@ -60,8 +60,10 @@ React.useEffect(() => {
       const isAuthorized = isAdmin || isBilling || isSales || isDev;
       const isReadOnlyDev = isDev && !isAdmin;
       setIsDevUser(isReadOnlyDev);
-     
+      setIsBillingUser(isBilling);
+      setActiveTab(isBilling ? 'INVOICE' : 'PO');
       setIsAuthorized(isAuthorized);
+
       if (!isAuthorized) {
         // setIsLocationConfigured(false);
         hideLoader();
@@ -147,7 +149,7 @@ React.useEffect(() => {
       const isSales = userGroups.some(g => g.Title === 'Sales Team');
       const isDev = userGroups.some(g => g.Title === 'Dev Team');
       const isAuthorized = isAdmin || isBilling || isSales || isDev;
-       setIsSales(isSales);
+      setIsSales(isSales);
       if (!isAuthorized) {
         setIsLocationConfigured(false);
         return
@@ -233,7 +235,7 @@ React.useEffect(() => {
         userLoc = Array.from(new Set(billingData.map(b => b.Location)));
         userClients = masterClientData.filter(c => userLoc.includes(c.Location));
         if (userLoc.length === 0) {
-           setIsLocationConfigured(false);
+          setIsLocationConfigured(false);
         }
       } else if (isSales) {
         const userEmail = currentUser.Email;
@@ -263,8 +265,8 @@ React.useEffect(() => {
         const estimationData: any[][] = await Promise.all(fetchedEstimations);
         const flatEstimationData = estimationData.reduce((acc, curr) => acc.concat(curr), []);
         flatEstimationData.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime());
-         setPoItems(flatEstimationData);
-       
+        setPoItems(flatEstimationData);
+
         return;
 
       }
@@ -278,8 +280,8 @@ React.useEffect(() => {
       }, []);
       //  flatEstimationData.sort((a, b) => b.Id - a.Id);
       flatEstimationData.sort((a: any, b: any) => new Date(b.Modified).getTime() - new Date(a.Modified).getTime())
-       setPoItems(flatEstimationData);
-  
+      setPoItems(flatEstimationData);
+
     } catch (error) {
       console.error('Error fetching user groups:', error);
     }
@@ -479,13 +481,13 @@ React.useEffect(() => {
     // event.data contains the full row object
     const row = event.data;
     // navigate(`/PO?ProposalId=${row.Id}`);
-       navigate(`/PO?ProposalId=${row.Id}&from=dashboard`);
+    navigate(`/PO?ProposalId=${row.Id}&from=dashboard`);
 
   };
   const handleInvoiceRowClick = (event: any) => {
     const row = event.data; // important in AG Grid
     // navigate(`/InvoiceForm?POID=${row.Id}`);
-navigate(`/InvoiceForm?POID=${row.Id}&from=dashboard`);
+    navigate(`/InvoiceForm?POID=${row.Id}&from=dashboard`);
 
   };
 
@@ -500,7 +502,7 @@ navigate(`/InvoiceForm?POID=${row.Id}&from=dashboard`);
             <div className=''>
               <div className='mt-4'>
                 <div className="tab-header">
-                  <button type='button'
+                  {!isBillingUser && (<button type='button'
                     className={activeTab === 'PO' ? 'active-tab' : ''}
                     onClick={() => setActiveTab('PO')}
                   >
@@ -508,17 +510,18 @@ navigate(`/InvoiceForm?POID=${row.Id}&from=dashboard`);
                       <span className="count-badge">{proposals.length}</span>
                     )}
                   </button>
+                  )}
 
-              
-                    <button type='button'
-                      className={activeTab === 'INVOICE' ? 'active-tab' : ''}
-                      onClick={() => setActiveTab('INVOICE')}
-                    >
-                      Pending for Invoice  {poItems.length > 0 && (
-                        <span className="count-badge">{poItems.length}</span>
-                      )}
-                    </button>
-               
+
+                  <button type='button'
+                    className={activeTab === 'INVOICE' ? 'active-tab' : ''}
+                    onClick={() => setActiveTab('INVOICE')}
+                  >
+                    Pending for Invoice  {poItems.length > 0 && (
+                      <span className="count-badge">{poItems.length}</span>
+                    )}
+                  </button>
+
                 </div>
 
                 <div className="">
@@ -534,7 +537,7 @@ navigate(`/InvoiceForm?POID=${row.Id}&from=dashboard`);
                       btnCaption=" New"
                       btnTitle=''
                       searchBoxLeft={true}
-                      onRowClicked={!isDevUser? handlePoRowClick:undefined}
+                      onRowClicked={!isDevUser ? handlePoRowClick : undefined}
                       domLayout="normal"
                       suppressColumnVirtualization={true}
                       ensureDomOrder={true}
@@ -560,7 +563,7 @@ navigate(`/InvoiceForm?POID=${row.Id}&from=dashboard`);
                       btnCaption=" New"
                       btnTitle=''
                       searchBoxLeft={true}
-                      onRowClicked={!isDevUser && !isSales? handleInvoiceRowClick:undefined}
+                      onRowClicked={!isDevUser && !isSales ? handleInvoiceRowClick : undefined}
                       domLayout="normal"
                       suppressColumnVirtualization={true}
                       ensureDomOrder={true}

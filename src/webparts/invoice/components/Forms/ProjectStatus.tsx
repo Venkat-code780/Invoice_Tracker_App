@@ -1171,8 +1171,8 @@ private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any
 
     // PO list (include ProjectTitle now)
     sp.web.lists.getByTitle(POList).items
-      .select("ProposalID", "ProjectTitle")
-      .filter(`ClientName eq '${selectedClientName}' and Status eq 'In-Progress'`)
+      .select("ProposalID", "ProjectTitle",'Created')
+      .filter(`ClientName eq '${selectedClientName}' and Status eq 'In-Progress'`).orderBy('Created',false)
       .top(2000)
       .get()
 
@@ -1200,6 +1200,34 @@ private fetchPONumbersbasedonProject(selectedproject: any, selectedponumber: any
   const uniqueProjects = Array.from(
     new Map(matchedPOProjects.map(item => [item.label, item])).values()
   );
+
+  const createdMap = new Map<string, Date>();
+
+Podetails.forEach((item: any) => {
+  if (item.ProjectTitle && !createdMap.has(item.ProjectTitle)) {
+    createdMap.set(item.ProjectTitle, new Date(item.Created));
+  }
+});
+uniqueProjects.sort((a, b) => {
+  const keyA = a.label ?? '';
+  const keyB = b.label ?? '';
+
+  const dateA = createdMap.get(keyA) ?? new Date(0);
+  const dateB = createdMap.get(keyB) ?? new Date(0);
+
+  return dateB.getTime() - dateA.getTime();
+});
+// ✅ Ensure selected project exists in dropdown (Edit Mode)
+if (
+  isEditMode &&
+  selectedproject &&
+  !uniqueProjects.some(item => item.value === selectedproject)
+) {
+  uniqueProjects.unshift({
+    label: selectedproject,
+    value: selectedproject
+  });
+}
 
   this.setState({
     ProjectNames: uniqueProjects,

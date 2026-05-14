@@ -966,9 +966,8 @@ const hash = window.location.hash;
   private fetchTitleofProposalBasedOnProjects = (selectedLabel: string, selectedproposal: string) => {
 
     const EstimationsList = 'ProposalDetails';
-    sp.web.lists.getByTitle(EstimationsList).items.filter(`Title eq '${selectedLabel}' and ClientName eq '${this.state.ClientName}' and ProposalFor eq '${this.state.Location}' and Status eq 'Approved'`).select('Proposal', 'Id').top(2000).get().then((Response: any[]) => {
-      console.log(Response);
-
+    sp.web.lists.getByTitle(EstimationsList).items.filter(`Title eq '${selectedLabel}' and ClientName eq '${this.state.ClientName}' and ProposalFor eq '${this.state.Location}' and Status eq 'Approved'`).select('Proposal', 'Id').orderBy('Created',false).top(2000).get().then((Response: any[]) => {
+      
       const { isEditMode } = this.state;
       const ProposalOptions = Response.map(item => ({
         label: item.Proposal,
@@ -1204,7 +1203,7 @@ const hash = window.location.hash;
   private fetchProjetsbasedonClientName = (selectedClientName: string, selectedproject: string) => {
     const ProposalList = 'ProposalDetails';
     sp.web.lists.getByTitle(ProposalList).items.select("Id", "Title")
-      .filter(`ClientName eq '${selectedClientName}' and ProposalFor eq '${this.state.Location}' and Status eq 'Approved'`).top(2000).get().then((Response: any[]) => {
+      .filter(`ClientName eq '${selectedClientName}' and ProposalFor eq '${this.state.Location}' and Status eq 'Approved'`).orderBy('Created',false).top(2000).get().then((Response: any[]) => {
         console.log(Response);
         const { isEditMode } = this.state;
         const uniqueTitles = Array.from(new Set(Response.map(item => item.Title)));

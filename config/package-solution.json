@@ -1,8 +1,8 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
   "solution": {
-    "name": "invoice-tracker-app-client-side-solution-DEV",
-    "id": "a0b8d4e9-9bca-4285-ad10-b95e85d4e5e0",
+    "name": "invoice-tracker-app-client-side-solution-PROD",
+    "id": "a0b8d4e9-9bca-4285-ad10-b95e85d4e5e1",
     "version": "1.0.0.0",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
@@ -35,6 +35,6 @@
     ]
   },
   "paths": {
-    "zippedPackage": "solution/invoice-tracker-app-DEV.sppkg"
+    "zippedPackage": "solution/invoice-tracker-app-PROD.sppkg"
   }
 }

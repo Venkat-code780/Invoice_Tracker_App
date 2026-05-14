@@ -106,7 +106,7 @@ class InvoiceForm extends React.Component<IInvoiceProps, IinvoiceState> {
   inputPonumber:React.RefObject<HTMLSelectElement>;
   inputInvoicefor:React.RefObject<HTMLSelectElement>;
   InvoicedDate: React.RefObject<HTMLInputElement>;
-    private inputSubmittedName: React.RefObject<PeoplePicker>;
+    private inputSubmittedName: React.RefObject<PeoplePicker> = React.createRef<PeoplePicker>();
   inputPaymentDate: React.RefObject<HTMLInputElement>;
   inputInvoiceStatus: React.RefObject<HTMLSelectElement>;
     inputRemarks: React.RefObject<HTMLTextAreaElement>;
